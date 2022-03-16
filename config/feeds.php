@@ -1,10 +1,13 @@
 <?php
 
+use Daalder\Feeds\Jobs\AdmarktFeed;
+
 return [
-    'active-feeds' => [
-
+    'bucket' => 'nubuiten-feeds',
+    'enabled-feeds' => [
+        AdmarktFeed::class,
     ],
-    'active-stores-ids' => [
-
+    'enabled-stores-ids' => [
+        1, 2
     ]
 ];

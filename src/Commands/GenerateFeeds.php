@@ -1,23 +1,32 @@
 <?php
 
-namespace Daalder\EnvironmentSyncer\Commands;
+namespace Daalder\Feeds\Commands;
 
-use Carbon\CarbonInterface;
-use Daalder\EnvironmentSyncer\Exceptions\EnvironmentSyncerException;
-use Daalder\EnvironmentSyncer\Jobs\SyncWordpress;
-use Daalder\EnvironmentSyncer\Services\DatabaseSyncer;
 use Illuminate\Console\Command;
-use Illuminate\Foundation\Bus\DispatchesJobs;
-use Illuminate\Support\Arr;
-use Rahul900Day\LaravelConsoleSpinner\Spinner;
+use Pionect\Daalder\Models\Store\Store;
 
+/**
+ * Class GenerateFeeds.
+ */
 class GenerateFeeds extends Command
 {
     use DispatchesJobs;
 
+    /**
+     * The console command name.
+     *
+     * @var string
+     */
     protected $name = 'feeds:generate';
+
     protected $signature = 'feeds:generate';
-    protected $description = 'Generate enabled feeds for enabled stores.';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Generate the enabled feeds for the enabled stores.';
 
     /**
      * Execute the console command.
@@ -26,6 +35,16 @@ class GenerateFeeds extends Command
      */
     public function handle()
     {
+        $feeds = config('feeds.enabled-feeds');
+        $stores = Store::query()->whereIn('id', config('feeds.enabled-stores-ids'));
 
+        foreach($feeds as $feed) {
+            foreach($stores as $store) {
+                $feedName = get_class_name($feed);
+                $this->info('Start '.$feedName.' for '.$store->code.'.');
+
+                dispatch($feed::dispatch($store));
+            }
+        }
     }
 }
