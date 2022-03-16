@@ -1,0 +1,45 @@
+{
+    "name": "daalder/feeds",
+    "description": "Daalder package for generating Product feeds (Google, Netrivals, and more).",
+    "type": "library",
+    "license": "closed source",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://repo.packagist.com/pionect/"
+        },
+        {
+            "packagist.org": false
+        }
+    ],
+    "require": {
+        "ext-zip": "*",
+        "php": "^7.3|^8.0",
+        "pionect/daalder": "^11|^12|^13|dev-acceptance",
+        "rahul900day/laravel-console-spinner": "^1.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^6.0",
+        "orchestra/database": "6.x-dev",
+        "phpunit/phpunit": "^9.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "Daalder\\Feeds\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Daalder\\Feeds\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+              "Daalder\\Feeds\\FeedsServiceProvider"
+            ]
+        }
+    }
+}
