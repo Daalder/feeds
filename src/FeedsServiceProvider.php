@@ -2,7 +2,7 @@
 
 namespace Daalder\Feeds;
 
-use Daalder\EnvironmentSyncer\Commands\GenerateFeeds;
+use Daalder\Feeds\Commands\GenerateFeeds;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 
 /**
