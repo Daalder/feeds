@@ -19,9 +19,10 @@ class FeedsServiceProvider extends ServiceProvider
     {
         parent::boot();
 
+        $this->loadViewsFrom( __DIR__ . '/../' . 'resources/views', 'daalder-feeds');
 
         $this->publishes([
-            __DIR__.'/../config/feeds.php' => config_path('feeds.php'),
+            __DIR__.'/../config/daalder-feeds.php' => config_path('daalder-feeds.php'),
         ]);
 
         $this->commands([
@@ -36,6 +37,6 @@ class FeedsServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/feeds.php', 'feeds');
+        $this->mergeConfigFrom(__DIR__.'/../config/daalder-feeds.php', 'daalder-feeds');
     }
 }

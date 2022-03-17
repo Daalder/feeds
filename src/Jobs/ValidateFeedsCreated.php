@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Jobs\Feeds;
+namespace Daalder\Feeds\Jobs;
 
-use App\Mail\FeedErrorEmail;
 use Aws\S3\S3Client;
 use Aws\S3\S3ClientInterface;
+use Daalder\Feeds\Mail\FeedErrorEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -17,14 +17,26 @@ use Pionect\Daalder\Models\Store\Store;
 
 class ValidateFeedsCreated
 {
+    use Dispatchable;
+
     /** @var S3Client */
     protected $s3Client;
 
-    protected $feedsBucket = 'nubuiten-feeds';
+    /** @var string[] */
+    protected $feeds;
 
-    protected $feeds = [
-        'admarkt', 'beslist', 'bol', 'google', 'netrivals', 'shopr', 'tradetracker'
-    ];
+    /** @var integer[] */
+    protected $enabledStoreIds;
+    
+    /** @var string */
+    protected $feedsBucket = '';
+
+    public function __construct()
+    {
+        $this->feedsBucket = config('daalder-feeds.bucket');
+        $this->feeds = config('daalder-feeds.enabled-feeds');
+        $this->enabledStoreIds = config('daalder-feeds.enabled-stores-ids');
+    }
 
     public function handle()
     {
@@ -35,44 +47,56 @@ class ValidateFeedsCreated
         $iterator = $this->s3Client->getIterator('ListObjects', [
             'Bucket' => $this->feedsBucket,
         ]);
+        
+        $stores = Store::query()->whereIn('id', $this->enabledStoreIds)->get();
 
-        // Iterate objects and match store/feed
-        $feedsFound = [];
-        foreach ($iterator as $object) {
-            $pathParts = explode('/', $object['Key']);
-            $feed = $pathParts[0];
-            $extension = '.'.array_last(explode('.', $pathParts[1]));
-            $storeCode = Str::replace($extension, '', $pathParts[1]);
+        $invalidFeeds = [];
+        
+        foreach($this->feeds as $feed) {
+            foreach($stores as $store) {
+                // Get variables from temporary feed instance
+                $feedInstance = (new $feed($store));
+                $feedName = $feedInstance->vendor;
+                $feedType = $feedInstance->type;
+                
+                // Prepare path to file on S3
+                $targetDirectory = $store->code.'/'.$feedName;
+                $targetFileName = $feedName.'.'.$feedType;
+                $targetPath = $targetDirectory .'/'. $targetFileName;
 
-            $feedsFound[$feed] = array_merge($feedsFound[$feed] ?? [], [
-                $storeCode => $object,
-            ]);
-        }
+                try {
+                    // Get the currently active feed file for this feed/store combination
+                    $currentFeed = $this->s3Client->getObject([
+                        'Bucket' => $this->feedsBucket,
+                        "Key" => $targetPath,
+                    ]);
+                } catch(\Exception $e) {
+                    // If the file is missing, add it to the $missingFeeds array
+                    $invalidFeeds[] = [
+                        'storeCode' => $store->code,
+                        'feedName' => $feedName,
+                        'lastDate' => null,
+                    ];
+                    continue;
+                }
 
-        // Iterate all feed-store combinations that should have a file on S3
-        $missingFeeds = [];
-        $outdatedFeeds = [];
-
-        foreach ($this->feeds as $feed) {
-            /** @var Store $store */
-            foreach ($this->storeRepository->all() as $store) {
-                // If the file wasn't found, save it as missing
-                if (array_has($feedsFound, $feed) === false || array_has($feedsFound[$feed], $store->code) === false) {
-                    $missingFeeds[$feed] = array_merge($missingFeeds[$feed] ?? [], [$store->code]);
-                } else {
-                    // Else, check the timestamp
-                    $awsDateTime = $feedsFound[$feed][$store->code]['LastModified'];
-                    $dateTime = Carbon::createFromTimestamp($awsDateTime->getTimestamp(),
-                        $awsDateTime->getTimezone()->getName());
-
-                    // If object is older than 24 hours, the generation must've failed
-                    if ($dateTime->diffInHours(now()) > 24) {
-                        $outdatedFeeds[$feed] = array_merge($outdatedFeeds[$feed] ?? [],
-                            [$store->code => $dateTime->toDateString()]);
-                    }
+                // Get last modified date from current feed file
+                $lastModifiedDate = $currentFeed->get('LastModified');
+                $lastModifiedDate = Carbon::createFromTimestamp($lastModifiedDate->getTimestamp());
+                
+                // If the file was not modified today, add it to the $missingFeeds array
+                if($lastModifiedDate->diffInDays(today()) !== 0) {
+                    $invalidFeeds[] = [
+                        'storeCode' => $store->code,
+                        'feedName' => $feedName,
+                        'lastDate' => $lastModifiedDate->toDateTimeString(),
+                    ];
                 }
             }
         }
+        
+        $missingFeeds = collect($invalidFeeds)->whereNull('lastDate');
+        $outdatedFeeds = collect($invalidFeeds)->whereNotNull('lastDate');
 
         if (count($missingFeeds) > 0 || count($outdatedFeeds) > 0) {
             Mail::send(new FeedErrorEmail(collect($missingFeeds), collect($outdatedFeeds)));

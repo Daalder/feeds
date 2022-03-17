@@ -9,10 +9,10 @@ use Pionect\Daalder\Services\MoneyFactory;
 class AdmarktFeed extends Feed
 {
     /** @var string */
-    protected $type = 'txt';
+    public $type = 'txt';
 
     /** @var string */
-    protected $vendor = 'admarkt';
+    public $vendor = 'admarkt';
 
     /** @var string[] */
     protected $fieldNames = [
@@ -65,17 +65,14 @@ class AdmarktFeed extends Feed
 
         $shipping_weight = ($product->weight != '') ? $product->weight : 1;
 
-        $priceObject = $product->getCurrentPrice();
-        $currency = optional(optional($priceObject)->currency)->code ?? $this->getCurrency();
-
         $fields = [
             'id' => $product->id,
             'title' => $product->name,
             'description' => $product->description,
             'link' => $host.'/'.$product->url,
-            'price' => $this->getFormattedPrice($priceObject),
-            'sale_price' => $this->getFormattedListPrice($priceObject),
-            'currency' => $currency,
+            'price' => $this->getFormattedPrice($product),
+            'sale_price' => $this->getFormattedListPrice($product),
+            'currency' => $this->getCurrency($product),
             'availability' => 'in stock',
             'shipping_weight' => $shipping_weight,
             'expiration_date' => date('Y-m-d', strtotime('+2 weeks')),

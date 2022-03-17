@@ -2,7 +2,10 @@
 
 namespace Daalder\Feeds\Commands;
 
+use Daalder\Feeds\Jobs\ValidateFeedsCreated;
+use Illuminate\Bus\Batch;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Bus;
 use Pionect\Daalder\Models\Store\Store;
 
 /**
@@ -33,16 +36,29 @@ class GenerateFeeds extends Command
      */
     public function handle()
     {
-        $feeds = config('feeds.enabled-feeds');
-        $stores = Store::query()->whereIn('id', config('feeds.enabled-stores-ids'))->get();
+        $feeds = config('daalder-feeds.enabled-feeds');
+        $stores = Store::query()->whereIn('id', config('daalder-feeds.enabled-stores-ids'))->get();
+
+        $batch = [];
 
         foreach($feeds as $feed) {
             foreach($stores as $store) {
                 $feedName = get_class_name($feed);
-                $this->info('Start '.$feedName.' for '.$store->code.'.');
 
-                dispatch($feed::dispatch($store));
+                $batch[] = new $feed($store);
             }
         }
+
+        Bus::batch($batch)
+            ->name('Generate feeds')
+            ->finally(function(Batch $batch) {
+                if(config('daalder-feeds.validate-feeds.enabled') === true) {
+                    ValidateFeedsCreated::dispatchSync();
+                }
+            })
+            ->allowFailures()
+            ->dispatch();
+
+        $this->info('Queued '. count($feeds) * $stores->count() . ' feeds.');
     }
 }

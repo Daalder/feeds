@@ -1,12 +1,18 @@
 <?php
 
-namespace App\Jobs\Feeds;
+namespace Daalder\Feeds\Jobs;
 
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Services\MoneyFactory;
 
 class BeslistFeed extends Feed
 {
+    /** @var string */
+    public $type = 'txt';
+
+    /** @var string */
+    public $vendor = 'beslist';
+    
     public $fieldNames = [
         'id',
         'ean',
@@ -28,64 +34,55 @@ class BeslistFeed extends Feed
         'delivery_period_be',
     ];
 
-    protected function generate()
+    protected function productToFeedRow(Product $product)
     {
-        $this->generateFeed(
-            'txt',
-            'beslist',
-            function (Product $product) {
-                $host = $this->protocol.$this->store->domain;
+        $host = $this->protocol.$this->store->domain;
 
-                $priceObject = $product->getCurrentPrice();
-                $currency = optional(optional($priceObject)->currency)->code ?? $this->getCurrency();
+        $fields = [
+            'id' => $product->id,
+            'ean' => $product->ean,
+            'title' => $product->name,
+            'description' => $product->description,
+            'link' => $host.'/'.$product->url,
+            'image_link' => '',
+            'price' => $this->getFormattedPrice($product),
+            'sale_price' => $this->getFormattedListPrice($product),
+            'currency' => $this->getCurrency($product),
+            'availability' => 'in stock',
+            'shipping_weight' => $product->weight,
+            'expiration_date' => date('d-m-Y', strtotime('+2 weeks')),
+            'condition' => 'new',
+            'payment_accepted' => 'IDEAL,Paypal,BanContact Mister Cash,Bankoverschrijving',
+            'brand' => '',
+            'category' => $product->productattributeset ? $product->productattributeset->name : null,
+            'delivery_period_nl' => $product->shippingTime->name ?? $this->getDelivery($product),
+            'delivery_period_be' => $product->shippingTime->name ?? $this->getDelivery($product),
+        ];
 
-                $fields = [
-                    'id' => $product->id,
-                    'ean' => $product->ean,
-                    'title' => $product->name,
-                    'description' => $product->description,
-                    'link' => $host.'/'.$product->url,
-                    'image_link' => '',
-                    'price' => $this->getFormattedPrice($priceObject),
-                    'sale_price' => $this->getFormattedListPrice($priceObject),
-                    'currency' => $currency,
-                    'availability' => 'in stock',
-                    'shipping_weight' => $product->weight,
-                    'expiration_date' => date('d-m-Y', strtotime('+2 weeks')),
-                    'condition' => 'new',
-                    'payment_accepted' => 'IDEAL,Paypal,BanContact Mister Cash,Bankoverschrijving',
-                    'brand' => '',
-                    'category' => $product->productattributeset ? $product->productattributeset->name : null,
-                    'delivery_period_nl' => $product->shippingTime->name ?? $this->getDelivery($product),
-                    'delivery_period_be' => $product->shippingTime->name ?? $this->getDelivery($product),
-                ];
+        if (!is_null($product->brand)) {
+            $fields['brand'] = $product->brand->name;
+        }
 
-                if (!is_null($product->brand)) {
-                    $fields['brand'] = $product->brand->name;
-                }
+        $image = $product->images()
+            ->first();
 
-                $image = $product->images()
-                    ->first();
+        if ($image) {
+            $fields['image_link'] = $image->src;
+        }
 
-                if ($image) {
-                    $fields['image_link'] = $image->src;
-                }
+        //TODO don't hard code id for beslist
+        $categories = $product->feedCategories()
+            ->where('feed_consumer_id', 3)
+            ->orderBy('feed_category_product.id')
+            ->get();
 
-                //TODO don't hard code id for beslist
-                $categories = $product->feedCategories()
-                    ->where('feed_consumer_id', 3)
-                    ->orderBy('feed_category_product.id')
-                    ->get();
+        $path = '';
+        foreach ($categories as $category) {
+            $path .= $category->name.', ';
+        }
 
-                $path = '';
-                foreach ($categories as $category) {
-                    $path .= $category->name.', ';
-                }
+        $fields['category'] = rtrim($path, ', ');
 
-                $fields['category'] = rtrim($path, ', ');
-
-                return $fields;
-            }
-        );
+        return $fields;
     }
 }

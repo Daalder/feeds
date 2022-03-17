@@ -6,10 +6,13 @@ use Aws\S3\S3Client;
 use Aws\S3\S3ClientInterface;
 use Closure;
 use Exception;
+use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -22,7 +25,7 @@ use Pionect\Daalder\Services\MoneyFactory;
 
 abstract class Feed implements ShouldQueue
 {
-    use Dispatchable, Queueable;
+    use Dispatchable, Queueable, Batchable, InteractsWithQueue;
 
     /** @var Product */
     protected $productRepository;
@@ -40,7 +43,7 @@ abstract class Feed implements ShouldQueue
     protected $protocol = 'https://';
 
     /** @var integer */
-    protected $chunkSize = 500;
+    protected $chunkSize = 50;//500;
 
     /** @var integer[] */
     protected $excludedGoogleAttributeSets = [720];
@@ -52,10 +55,10 @@ abstract class Feed implements ShouldQueue
     protected $fieldNames;
 
     /** @var string */
-    protected $type = '';
+    public $type = '';
 
     /** @var string */
-    protected $vendor = 'admarkt';
+    public $vendor = 'admarkt';
 
     /**
      * Feed constructor.
@@ -65,7 +68,7 @@ abstract class Feed implements ShouldQueue
     public function __construct(Store $store)
     {
         $this->store = $store;
-        $this->feedsBucket = config('feeds.bucket');
+        $this->feedsBucket = config('daalder-feeds.bucket');
 
         $this->onQueue('feeds');
     }
@@ -86,6 +89,20 @@ abstract class Feed implements ShouldQueue
 
     abstract protected function productToFeedRow(Product $product);
 
+    protected function getProductQuery() {
+        return $this->productRepository->newQuery()
+            // that have products
+            ->has('images')
+            // that are active for $this->store
+            ->whereHas('stores', function (Builder $query) {
+                $query->where(Store::table().'.id', $this->store->id);
+            })
+            // that have an attributeset
+            ->hasAttributeSet()
+            // Include brand and attributeset relationships
+            ->with(['brand', 'productattributeset']);
+    }
+    
     private function generate() {
         // Create storage/feeds directory if it doesn't exist
         if (!File::exists(storage_path('feeds'))) {
@@ -98,129 +115,155 @@ abstract class Feed implements ShouldQueue
         }
 
         // Prepare filename and path
-        $fileName = $this->store->code.'_'.today()->toDateString().'.'.$this->type;
+        $fileName = $this->store->code.'.'.$this->type;
         $localFileName = storage_path().'/feeds/'.$this->vendor.'/'.$fileName;
 
-        $feedHeader = '';
-
-        // Get the header (first row) of the feed
-        switch($this->type) {
-            case 'txt':
-                $feedHeader = $this->convertToTxtLine($this->fieldNames);
-                break;
-            case 'csv':
-                $feedHeader = $this->convertToCsvLine($this->fieldNames);
-                break;
-        }
+        $feedHeader = $this->formatFeedLine($this->fieldNames);
 
         // Write the header (first row) of the feed
         File::put($localFileName, $feedHeader);
 
         // Query products
-        $query = $this->productRepository->newQuery()
-            // that have products
-            ->has('images')
-            // that are active for $this->store
-            ->whereHas('stores', function (Builder $query) {
-                $query->where(Store::table().'.id', $this->store->id);
-            })
-            // that have an attributeset
-            ->hasAttributeSet()
-            // Include brand and attributeset relationships
-            ->with(['brand', 'productattributeset']);
+        $query = $this->getProductQuery();
 
         // Chunk-process the products
-        $query->chunk($this->chunkSize, function($products) {
-            $validProducts = $products->filter->isPushable();
-        });
+//        $query->chunk($this->chunkSize, function($products) use ($localFileName) {
+//            // Filter products by isPushable
+//            $validProducts = $products->filter->isPushable();
+//
+//            // Map the validProducts into feed rows
+//            $feedLines = $validProducts
+//                ->map(function($product) use ($localFileName) {
+//                    try {
+//                        // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
+//                        $feedRow = $this->productToFeedRow($product);
+//                        // Format and return the feed row
+//                        return $this->formatFeedLine($feedRow);
+//                    } catch (\Exception $ex) {
+//                        // Log exception and return an empty string
+//                        logger()->error("Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
+//                        return '';
+//                    }
+//                })
+//                // Implode the array of rows into a single string
+//                ->implode('');
+//
+//            // Append the feed rows for the product chunk to the feed file
+//            File::append($localFileName, $feedLines);
+//        });
 
         // Upload the file to S3
-        $this->putToS3($localFileName, $vendor.'/'.$this->store->code.'.'.$type);
+//        $this->uploadToS3($localFileName);
     }
 
-    protected function productChunkHandler($products) {
-        $feed = '';
-
-        /* @var $product Product */
-        foreach ($products as $product) {
-            if (!$product->isPushable()) {
-                continue;
-            }
-
-            try {
-                $fields = $fieldsCallable($product);
-            } catch (\Exception $ex) {
-                echo "\n".sprintf('Error when exporting product %s for feed. %s %s %s ', $product->id,
-                        $ex->getMessage(), $ex->getFile(), $ex->getLine())."\n";
-                continue;
-            }
-
-            // Product might miss some required attribute for said feed, skip if that's the case
-            if (!$fields) {
-                continue;
-            }
-
-            $feed .= $this->{$method}($fields);
-        }
-
-        File::append($localFileName, $feed);
-    }
-
-    protected function getCountryCode($store)
+    protected function getCountryCode()
     {
-        return Str::upper(Str::after($store->default_locale, '_'));
+        return Str::upper(Str::after($this->store->default_locale, '_'));
     }
 
-    protected function getCurrency()
+    protected function getCurrency(Product $product)
     {
-        return 'EUR';
+        return optional(optional($product->getCurrentPrice())->currency)->symbol ?? $this->store->currency_code;
     }
 
-    protected function getFormattedPrice(?Price $price)
+    protected function getFormattedPrice(Product $product)
     {
-        if (!$price) {
+        $price = $product->getCurrentPrice();
+
+        if(!$price || !$price->priceAsMoney()) {
             return '';
         }
 
-        $currency = optional($price->currency)->code ?? $this->getCurrency();
+        $currency = $this->getCurrency($product);
         $priceAsMoney = $price->priceAsMoney();
-        $priceString = $priceAsMoney ? MoneyFactory::toString($priceAsMoney) : '';
 
-        return $priceString.' '.$currency;
+        return MoneyFactory::format($priceAsMoney);
     }
 
-    protected function getFormattedListPrice(?Price $price)
+    protected function getFormattedListPrice(Product $product)
     {
+        $price = $product->getCurrentListPrice();
+
         if (!$price || !$price->listPriceAsMoney()) {
             return '';
         }
 
-        // Temporary fix for daalder ~13.15.5
+        // TODO: This is a temporary fix for daalder ~13.15.5
         if ($price->list_price === $price->price) {
             return '';
         }
 
-        $currency = optional($price->currency)->code ?? $this->getCurrency();
-        $priceAsMoney = $price->listPriceAsMoney();
-        $priceString = $priceAsMoney ? MoneyFactory::toString($priceAsMoney) : '';
+        $currency = $this->getCurrency($product);
+        $listPriceAsMoney = $price->listPriceAsMoney();
 
-        return $priceString.' '.$currency;
+        return MoneyFactory::format($listPriceAsMoney);
     }
 
     /**
      * @param $source
-     * @param $destination
      */
-    protected function putToS3($source, $destination)
+    protected function uploadToS3($source)
     {
+        // Prepare path to file on S3
+        $targetDirectory = $this->store->code.'/'.$this->vendor;
+        $targetFileName = $this->vendor.'.'.$this->type;
+        $targetPath = $targetDirectory .'/'. $targetFileName;
+
+        $currentFeed = null;
+
+        try {
+            // Get the currently active feed file
+            $currentFeed = $this->s3Client->getObject([
+                'Bucket' => $this->feedsBucket,
+                "Key" => $targetPath,
+            ]);
+        } catch(\Exception $e) {}
+
+
+        // If the currently active feed file was found
+        if($currentFeed) {
+            // Get the formatted date for when the currently active feed file was last modified and prepare a new filename using it
+            $lastModifiedDate = $currentFeed->get('LastModified');
+            $lastModifiedDate = Carbon::createFromTimestamp($lastModifiedDate->getTimestamp())->toDateString();
+            $newNameForOldFeed = $this->vendor.'_'.$lastModifiedDate.'.'.$this->type;
+
+            try {
+                // Get the backup file that's about to be created (will throw error if it doesn't exist yet)
+                $this->s3Client->getObject([
+                    'Bucket' => $this->feedsBucket,
+                    "Key" => $targetDirectory.'/'.$newNameForOldFeed,
+                ]);
+            } catch(\Exception $e) {
+                // Copy the currently active feed file to {vendor}_{datestring}.{extension} as a backup
+                $currentFeed = $this->s3Client->copyObject([
+                    'Bucket' => $this->feedsBucket,
+                    "Key" => $targetDirectory.'/'.$newNameForOldFeed,
+                    "CopySource" => $this->feedsBucket.'/'.$targetPath,
+                    'MetadataDirective' => 'REPLACE'
+                ]);
+            }
+        }
+
+        // Overwrite the currently active feed file with the newly generated one
         $this->s3Client->putObject(
             [
                 'Bucket' => $this->feedsBucket,
-                'Key' => $destination,
+                'Key' => $targetPath,
                 'SourceFile' => $source,
                 'ACL' => 'public-read',
             ]
         );
+    }
+
+    protected function formatFeedLine(array $fields) {
+        switch($this->type) {
+            case 'txt':
+                return $this->convertToTxtLine($fields);
+                break;
+            case 'csv':
+                return $this->convertToCsvLine($fields);
+                break;
+        }
     }
 
     /** @noinspection PhpUnusedPrivateMethodInspection
