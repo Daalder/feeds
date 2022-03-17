@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Jobs\Feeds;
+namespace Daalder\Feeds\Jobs;
 
 use Aws\S3\S3Client;
 use Aws\S3\S3ClientInterface;
@@ -84,7 +84,7 @@ abstract class Feed implements ShouldQueue
         $this->generate();
     }
 
-    abstract protected function productToFeedRow();
+    abstract protected function productToFeedRow(Product $product);
 
     private function generate() {
         // Create storage/feeds directory if it doesn't exist

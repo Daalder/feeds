@@ -10,8 +10,6 @@ use Pionect\Daalder\Models\Store\Store;
  */
 class GenerateFeeds extends Command
 {
-    use DispatchesJobs;
-
     /**
      * The console command name.
      *
@@ -36,7 +34,7 @@ class GenerateFeeds extends Command
     public function handle()
     {
         $feeds = config('feeds.enabled-feeds');
-        $stores = Store::query()->whereIn('id', config('feeds.enabled-stores-ids'));
+        $stores = Store::query()->whereIn('id', config('feeds.enabled-stores-ids'))->get();
 
         foreach($feeds as $feed) {
             foreach($stores as $store) {
