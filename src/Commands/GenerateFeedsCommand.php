@@ -46,8 +46,6 @@ class GenerateFeedsCommand extends Command
 
         foreach($feeds as $feed) {
             foreach($stores as $store) {
-                $feedName = get_class_name($feed);
-
                 $batch[] = new $feed($store);
             }
         }
