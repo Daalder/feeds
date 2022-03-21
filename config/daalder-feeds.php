@@ -12,6 +12,9 @@ return [
     'bucket' => '',
     'enabled-feeds' => [],
     'enabled-store-codes' => [],
+    // Format:
+    // 'field-overwrites' => [ 'vendor' => [ 'fieldname' => 'fieldvalue' ] ]
+    'field-overwrites' => [],
     'validate-feeds' => [
         'enabled' => true,
         'email-addresses' => [],

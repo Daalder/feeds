@@ -137,6 +137,12 @@ abstract class Feed implements ShouldQueue
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
                         $feedRow = $this->productToFeedRow($product);
+
+                        $fieldOverwrites = config('daalder-feeds.field-overwrites.'.$this->vendor);
+                        foreach($fieldOverwrites as $field => $value) {
+                            $feedRow[$field] = $value;
+                        }
+
                         // Format and return the feed row
                         return $this->formatFeedLine($feedRow);
                     } catch (\Exception $ex) {
