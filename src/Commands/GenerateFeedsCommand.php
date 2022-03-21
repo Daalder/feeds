@@ -58,6 +58,8 @@ class GenerateFeedsCommand extends Command
                 if(config('daalder-feeds.validate-feeds.enabled') === true) {
                     ValidateFeedsCreated::dispatchSync();
                 }
+
+                event(new CommandHeartBeat('feeds-generated'));
             })
             ->allowFailures()
             ->dispatch();
