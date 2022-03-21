@@ -1,6 +1,6 @@
 <?php
 
-namespace Daalder\Feeds\Jobs;
+namespace Daalder\Feeds\Jobs\Feeds;
 
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\Supplier\Supplier;
@@ -14,6 +14,7 @@ class BolFeed extends Feed
     /** @var string */
     public $vendor = 'bol';
 
+    /** @var string[] */
     public $fieldNames = [
         'Productnaam',
         'Korte Omschrijving',

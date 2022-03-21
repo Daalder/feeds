@@ -1,6 +1,6 @@
 <?php
 
-namespace Daalder\Feeds\Jobs;
+namespace Daalder\Feeds\Jobs\Feeds;
 
 use Pionect\Daalder\Models\Category\Category;
 use Pionect\Daalder\Models\Product\Product;
@@ -14,6 +14,7 @@ class ShoprFeed extends Feed
     /** @var string */
     public $vendor = 'shopr';
 
+    /** @var string[] */
     public $fieldNames = [
         'title',
         'price',
@@ -31,8 +32,6 @@ class ShoprFeed extends Feed
 
     protected function productToFeedRow(Product $product)
     {
-        $host = $this->protocol.$this->store->domain;
-
         $priceAsMoney = optional($product->getCurrentPrice())->priceAsMoney();
         $price = $priceAsMoney ? MoneyFactory::toFloat($priceAsMoney) : 0;
         $shippingCost = 0;
@@ -52,7 +51,7 @@ class ShoprFeed extends Feed
         $fields = [
             'title' => $product->name,
             'price' => $price,
-            'url' => $host,
+            'url' => $this->getHost(),
             'shop_product_id' => $product->id,
             'category' => '', //gets filled later
             'delivery_time' => $product->shippingTime->name ?? $this->getDelivery($product),

@@ -1,12 +1,12 @@
 <?php
 
-use Daalder\Feeds\Jobs\AdmarktFeed;
-use Daalder\Feeds\Jobs\BeslistFeed;
-use Daalder\Feeds\Jobs\BolFeed;
-use Daalder\Feeds\Jobs\GoogleFeed;
-use Daalder\Feeds\Jobs\NetrivalsFeed;
-use Daalder\Feeds\Jobs\ShoprFeed;
-use Daalder\Feeds\Jobs\TradeTrackerFeed;
+use Daalder\Feeds\Jobs\Feeds\AdmarktFeed;
+use Daalder\Feeds\Jobs\Feeds\BeslistFeed;
+use Daalder\Feeds\Jobs\Feeds\BolFeed;
+use Daalder\Feeds\Jobs\Feeds\GoogleFeed;
+use Daalder\Feeds\Jobs\Feeds\NetrivalsFeed;
+use Daalder\Feeds\Jobs\Feeds\ShoprFeed;
+use Daalder\Feeds\Jobs\Feeds\TradeTrackerFeed;
 
 return [
     'bucket' => '',

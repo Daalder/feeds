@@ -1,6 +1,6 @@
 <?php
 
-namespace Daalder\Feeds\Jobs;
+namespace Daalder\Feeds\Jobs\Feeds;
 
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\Store\Store;
@@ -61,15 +61,13 @@ class AdmarktFeed extends Feed
     ];
 
     protected function productToFeedRow(Product $product) {
-        $host = $this->protocol.$this->store->domain;
-
         $shipping_weight = ($product->weight != '') ? $product->weight : 1;
 
         $fields = [
             'id' => $product->id,
             'title' => $product->name,
             'description' => $product->description,
-            'link' => $host.'/'.$product->url,
+            'link' => $this->getHost().'/'.$product->url,
             'price' => $this->getFormattedPrice($product),
             'sale_price' => $this->getFormattedListPrice($product),
             'currency' => $this->getCurrency($product),

@@ -1,6 +1,6 @@
 <?php
 
-namespace Daalder\Feeds\Jobs;
+namespace Daalder\Feeds\Jobs\Feeds;
 
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Services\MoneyFactory;
@@ -12,7 +12,8 @@ class TradeTrackerFeed extends Feed
 
     /** @var string */
     public $vendor = 'tradetracker';
-    
+
+    /** @var string[] */
     public $fieldNames = [
         'ID',
         'productURL',
@@ -38,8 +39,6 @@ class TradeTrackerFeed extends Feed
 
     protected function productToFeedRow(Product $product)
     {
-        $host = $this->protocol.$this->store->domain;
-
         $priceObject = $product->getCurrentPrice();
         $priceAsMoney = optional($priceObject)->priceAsMoney();
         $listPriceAsMoney = optional($priceObject)->priceAsMoney();
@@ -83,7 +82,7 @@ class TradeTrackerFeed extends Feed
 
         $fields = [
             'ID' => $product->id,
-            'productURL' => $host.'/'.$product->url,
+            'productURL' => $this->getHost().'/'.$product->url,
             'imageURL-1' => '', //Filled below
             'imageURL-2' => '',
             'imageURL-3' => '',

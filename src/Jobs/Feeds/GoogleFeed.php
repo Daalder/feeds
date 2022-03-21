@@ -1,6 +1,6 @@
 <?php
 
-namespace Daalder\Feeds\Jobs;
+namespace Daalder\Feeds\Jobs\Feeds;
 
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
@@ -16,6 +16,7 @@ class GoogleFeed extends Feed
     /** @var string */
     public $vendor = 'google';
 
+    /** @var string[] */
     public $fieldNames = [
         'id',
         'title',
@@ -54,21 +55,18 @@ class GoogleFeed extends Feed
         if (!is_null($includeInGoogleFeed) && $includeInGoogleFeed == false) {
             return false;
         }
-
-        $host = $this->protocol.$this->store->domain;
-
+        
         $priceObject = $product->getCurrentPrice();
         $currency = $this->getCurrency($product);
         $countryCode = $this->getCountryCode();
 
+        $shipping = '';
         /** @var ShippingMethod $rate */
         $rate = null;
 
         if ($product->shippingTier && $product->shippingTier->methods) {
             $rate = $product->shippingTier->methods->where('country_code', $countryCode)->first();
         }
-
-        $shipping = '';
 
         if ($rate) {
             $shipping = "{$countryCode}:";
@@ -81,7 +79,7 @@ class GoogleFeed extends Feed
             'id' => $product->id,
             'title' => $product->name,
             'description' => $product->description,
-            'link' => $host.'/'.$product->url,
+            'link' => $this->getHost().'/'.$product->url,
             'image_link' => '', //Filled below
             'price' => $this->getFormattedPrice($product),
             'sale_price' => '', //Filled below
@@ -153,21 +151,5 @@ class GoogleFeed extends Feed
         $tag = $product->tags()->where('name', 'like', 'G:%')->first();
 
         return ($tag) ? $tag->name : '';
-    }
-
-    /**
-     * @param $marge
-     * @return int
-     */
-    protected function margeMapper($marge)
-    {
-        switch ($marge) {
-            case $marge <= 0:
-                return 0;
-            case $marge > 70:
-                return 29;
-            default:
-                return (int) ceil($marge / 2.5);
-        }
     }
 }

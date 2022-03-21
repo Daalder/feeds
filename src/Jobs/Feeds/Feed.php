@@ -1,6 +1,6 @@
 <?php
 
-namespace Daalder\Feeds\Jobs;
+namespace Daalder\Feeds\Jobs\Feeds;
 
 use Aws\S3\S3Client;
 use Aws\S3\S3ClientInterface;
@@ -358,5 +358,83 @@ abstract class Feed implements ShouldQueue
             default:
                 return 'Onbekend';
         }
+    }
+
+    /**
+     * @return string
+     */
+    protected function getHost()
+    {
+        return $this->protocol.$this->store->domain;
+    }
+
+    /**
+     * @param $marge
+     * @return int
+     */
+    protected function margeMapper($marge)
+    {
+        switch ($marge) {
+            case $marge <= 0:
+                return 0;
+            case $marge > 70:
+                return 29;
+            default:
+                return (int) ceil($marge / 2.5);
+        }
+    }
+    
+    /**
+     * @param  Product  $product
+     * @return int
+     */
+    protected function getInStock(Product $product)
+    {
+        return ($product->stock) ? $product->stock->sum('in_stock') : 0;
+    }
+
+    /**
+     * @return string|null
+     */
+    protected function getTag(Product $product)
+    {
+        $tag = $product->tags()->where('name', 'like', 'G:%')->first();
+
+        return ($tag) ? $tag->name : null;
+    }
+    
+    /**
+     * @param  Product  $product
+     * @return string|null
+     */
+    protected function getImageLink(Product $product)
+    {
+        $image = $product->images()->first();
+        return optional($image)->src;
+    }
+
+    /**
+     * @param  Product  $product
+     * @return string
+     */
+    protected function getCategories(Product $product)
+    {
+        $path = '';
+
+        $categories = $product->feedCategories()
+            ->whereNull('feed_consumer_id')
+            ->orderBy('feed_category_product.id')
+            ->get();
+
+        if (null !== $categories) {
+            /* @var $category \Pionect\Daalder\Models\Feed\Category */
+            foreach ($categories as $category) {
+                $path .= $category->name.' > ';
+            }
+
+            $path = rtrim($path, ' >');
+        }
+
+        return $path;
     }
 }

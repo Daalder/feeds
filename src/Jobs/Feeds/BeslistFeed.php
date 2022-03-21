@@ -1,6 +1,6 @@
 <?php
 
-namespace Daalder\Feeds\Jobs;
+namespace Daalder\Feeds\Jobs\Feeds;
 
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Services\MoneyFactory;
@@ -12,7 +12,8 @@ class BeslistFeed extends Feed
 
     /** @var string */
     public $vendor = 'beslist';
-    
+
+    /** @var string[] */
     public $fieldNames = [
         'id',
         'ean',
@@ -36,14 +37,12 @@ class BeslistFeed extends Feed
 
     protected function productToFeedRow(Product $product)
     {
-        $host = $this->protocol.$this->store->domain;
-
         $fields = [
             'id' => $product->id,
             'ean' => $product->ean,
             'title' => $product->name,
             'description' => $product->description,
-            'link' => $host.'/'.$product->url,
+            'link' => $this->getHost().'/'.$product->url,
             'image_link' => '',
             'price' => $this->getFormattedPrice($product),
             'sale_price' => $this->getFormattedListPrice($product),

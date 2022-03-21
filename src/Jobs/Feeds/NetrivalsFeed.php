@@ -1,6 +1,6 @@
 <?php
 
-namespace Daalder\Feeds\Jobs;
+namespace Daalder\Feeds\Jobs\Feeds;
 
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
@@ -18,6 +18,7 @@ class NetrivalsFeed extends Feed
     /** @var string */
     public $vendor = 'netrivals';
 
+    /** @var string[] */
     public $fieldNames = [
         'product_id',
         'title',
