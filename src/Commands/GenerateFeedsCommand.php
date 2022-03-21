@@ -6,12 +6,13 @@ use Daalder\Feeds\Jobs\ValidateFeedsCreated;
 use Illuminate\Bus\Batch;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Bus;
+use Pionect\Daalder\Events\CommandHeartBeat;
 use Pionect\Daalder\Models\Store\Store;
 
 /**
  * Class GenerateFeeds.
  */
-class GenerateFeeds extends Command
+class GenerateFeedsCommand extends Command
 {
     /**
      * The console command name.
@@ -37,7 +38,9 @@ class GenerateFeeds extends Command
     public function handle()
     {
         $feeds = config('daalder-feeds.enabled-feeds');
-        $stores = Store::query()->whereIn('id', config('daalder-feeds.enabled-stores-ids'))->get();
+        $stores = Store::query()
+            ->whereIn('code', config('daalder-feeds.enabled-store-codes'))
+            ->get();
 
         $batch = [];
 
