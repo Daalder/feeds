@@ -2,8 +2,8 @@
 
 namespace Daalder\Feeds\Jobs;
 
-use Aws\S3\S3Client;
 use Aws\S3\S3ClientInterface;
+use Aws\S3\S3MultiRegionClient;
 use Daalder\Feeds\Mail\FeedErrorEmail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,14 +19,14 @@ class ValidateFeedsCreated
 {
     use Dispatchable;
 
-    /** @var S3Client */
+    /** @var S3MultiRegionClient */
     protected $s3Client;
 
     /** @var string[] */
     protected $feeds;
 
     /** @var integer[] */
-    protected $enabledStoreIds;
+    protected $enabledStoreCodes;
     
     /** @var string */
     protected $feedsBucket = '';
@@ -35,21 +35,14 @@ class ValidateFeedsCreated
     {
         $this->feedsBucket = config('daalder-feeds.bucket');
         $this->feeds = config('daalder-feeds.enabled-feeds');
-        $this->enabledStoreIds = config('daalder-feeds.enabled-stores-ids');
+        $this->enabledStoreCodes = config('daalder-feeds.enabled-store-codes');
     }
 
     public function handle()
     {
-        $this->storeRepository = app(StoreRepository::class);
         $this->s3Client = app(S3ClientInterface::class);
 
-        // Get iterator for all objects in feedsBucket
-        $iterator = $this->s3Client->getIterator('ListObjects', [
-            'Bucket' => $this->feedsBucket,
-        ]);
-        
-        $stores = Store::query()->whereIn('id', $this->enabledStoreIds)->get();
-
+        $stores = Store::query()->whereIn('code', $this->enabledStoreCodes)->get();
         $invalidFeeds = [];
         
         foreach($this->feeds as $feed) {

@@ -127,33 +127,33 @@ abstract class Feed implements ShouldQueue
         $query = $this->getProductQuery();
 
         // Chunk-process the products
-//        $query->chunk($this->chunkSize, function($products) use ($localFileName) {
-//            // Filter products by isPushable
-//            $validProducts = $products->filter->isPushable();
-//
-//            // Map the validProducts into feed rows
-//            $feedLines = $validProducts
-//                ->map(function($product) use ($localFileName) {
-//                    try {
-//                        // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
-//                        $feedRow = $this->productToFeedRow($product);
-//                        // Format and return the feed row
-//                        return $this->formatFeedLine($feedRow);
-//                    } catch (\Exception $ex) {
-//                        // Log exception and return an empty string
-//                        logger()->error("Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
-//                        return '';
-//                    }
-//                })
-//                // Implode the array of rows into a single string
-//                ->implode('');
-//
-//            // Append the feed rows for the product chunk to the feed file
-//            File::append($localFileName, $feedLines);
-//        });
+        $query->chunk($this->chunkSize, function($products) use ($localFileName) {
+            // Filter products by isPushable
+            $validProducts = $products->filter->isPushable();
+
+            // Map the validProducts into feed rows
+            $feedLines = $validProducts
+                ->map(function($product) use ($localFileName) {
+                    try {
+                        // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
+                        $feedRow = $this->productToFeedRow($product);
+                        // Format and return the feed row
+                        return $this->formatFeedLine($feedRow);
+                    } catch (\Exception $ex) {
+                        // Log exception and return an empty string
+                        logger()->error("Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
+                        return '';
+                    }
+                })
+                // Implode the array of rows into a single string
+                ->implode('');
+
+            // Append the feed rows for the product chunk to the feed file
+            File::append($localFileName, $feedLines);
+        });
 
         // Upload the file to S3
-//        $this->uploadToS3($localFileName);
+        $this->uploadToS3($localFileName);
     }
 
     protected function getCountryCode()
@@ -214,11 +214,10 @@ abstract class Feed implements ShouldQueue
         try {
             // Get the currently active feed file
             $currentFeed = $this->s3Client->getObject([
-                'Bucket' => $this->feedsBucket,
+                "Bucket" => $this->feedsBucket,
                 "Key" => $targetPath,
             ]);
         } catch(\Exception $e) {}
-
 
         // If the currently active feed file was found
         if($currentFeed) {
@@ -228,7 +227,8 @@ abstract class Feed implements ShouldQueue
             $newNameForOldFeed = $this->vendor.'_'.$lastModifiedDate.'.'.$this->type;
 
             try {
-                // Get the backup file that's about to be created (will throw error if it doesn't exist yet)
+                // Attempt to get the backup file that's about to be created. This will throw an error if it doesn't
+                // exist yet. If no error is thrown, the backup file already exists and we don't overwrite it.
                 $this->s3Client->getObject([
                     'Bucket' => $this->feedsBucket,
                     "Key" => $targetDirectory.'/'.$newNameForOldFeed,

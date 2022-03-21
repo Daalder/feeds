@@ -9,22 +9,13 @@ use Daalder\Feeds\Jobs\ShoprFeed;
 use Daalder\Feeds\Jobs\TradeTrackerFeed;
 
 return [
-    'bucket' => 'daalder-feeds-testing',
-    'enabled-feeds' => [
-        AdmarktFeed::class,
-        BeslistFeed::class,
-        BolFeed::class,
-        GoogleFeed::class,
-        NetrivalsFeed::class,
-        ShoprFeed::class,
-        TradeTrackerFeed::class,
-    ],
-    'enabled-stores-ids' => [
-        1, 2
-    ],
+    'bucket' => '',
+    'enabled-feeds' => [],
+    'enabled-store-codes' => [],
     'validate-feeds' => [
         'enabled' => true,
         'email-addresses' => [],
         'receiver-names' => [],
-    ]
+    ],
+    'keep-feeds' => '7 days',
 ];
