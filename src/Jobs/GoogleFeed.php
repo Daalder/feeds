@@ -58,8 +58,8 @@ class GoogleFeed extends Feed
         $host = $this->protocol.$this->store->domain;
 
         $priceObject = $product->getCurrentPrice();
-        $currency = $this->getCurrency();
-        $countryCode = $this->getCountryCode($this->store);
+        $currency = $this->getCurrency($product);
+        $countryCode = $this->getCountryCode();
 
         /** @var ShippingMethod $rate */
         $rate = null;
