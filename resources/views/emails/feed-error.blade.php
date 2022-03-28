@@ -11,10 +11,10 @@
     @if($missingFeeds->count() > 0)
 The following feeds are missing on S3:
 @component('mail::table')
-| Feed          | Store          |
-|:------------- |:-------------- |
+| Feed             | Store            | Yesterday's feed |
+|:---------------- |:---------------- |:---------------- |
 @foreach($missingFeeds as $missingFeed)
-| {{ $missingFeed['feedName'] }} | {{ $missingFeed['storeCode'] }} |
+| {{ $missingFeed['feedName'] }} | {{ $missingFeed['storeCode'] }} | [{{ $missingFeed['previousFeedName'] }}]({{ $missingFeed['previousFeedUrl'] }}) |
 @endforeach
 @endcomponent
     @endif
@@ -23,10 +23,10 @@ The following feeds are missing on S3:
     @if($outdatedFeeds->count() > 0)
 The following feeds are outdated on S3:
 @component('mail::table')
-| Feed          | Store          | Last generated at |
-|:------------- |:-------------- |:----------------- |
+| Feed             | Store            | Last generated at | Yesterday's feed |
+|:---------------- |:---------------- |:----------------- |:---------------- |
 @foreach($outdatedFeeds as $outdatedFeed)
-| {{ $outdatedFeed['feedName'] }} | {{ $outdatedFeed['storeCode'] }} | {{ $outdatedFeed['lastDate'] }}
+| {{ $outdatedFeed['feedName'] }} | {{ $outdatedFeed['storeCode'] }} | {{ $outdatedFeed['lastDate'] }} | [{{ $outdatedFeed['previousFeedName'] }}]({{ $outdatedFeed['previousFeedUrl'] }}) |
 @endforeach
 @endcomponent
     @endif

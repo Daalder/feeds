@@ -57,6 +57,9 @@ class ValidateFeedsCreated
                 $targetFileName = $feedName.'.'.$feedType;
                 $targetPath = $targetDirectory .'/'. $targetFileName;
 
+                $previousFeedName = $feedInstance->vendor.'_'.today()->subDay()->toDateString().'.'.$feedType;
+                $previousFeedUrl = 'https://s3.console.aws.amazon.com/s3/buckets/'.$this->feedsBucket.'/'.$targetDirectory.'/'.$previousFeedName;
+
                 try {
                     // Get the currently active feed file for this feed/store combination
                     $currentFeed = $this->s3Client->getObject([
@@ -69,6 +72,8 @@ class ValidateFeedsCreated
                         'storeCode' => $store->code,
                         'feedName' => $feedName,
                         'lastDate' => null,
+                        'previousFeedName' => $previousFeedName,
+                        'previousFeedUrl' => $previousFeedUrl,
                     ];
                     continue;
                 }
@@ -83,6 +88,8 @@ class ValidateFeedsCreated
                         'storeCode' => $store->code,
                         'feedName' => $feedName,
                         'lastDate' => $lastModifiedDate->toDateTimeString(),
+                        'previousFeedName' => $previousFeedName,
+                        'previousFeedUrl' => $previousFeedUrl,
                     ];
                 }
             }
@@ -92,7 +99,7 @@ class ValidateFeedsCreated
         $outdatedFeeds = collect($invalidFeeds)->whereNotNull('lastDate');
 
         if (count($missingFeeds) > 0 || count($outdatedFeeds) > 0) {
-            Mail::send(new FeedErrorEmail(collect($missingFeeds), collect($outdatedFeeds)));
+            Mail::send(new FeedErrorEmail($missingFeeds, $outdatedFeeds));
         }
     }
 }
