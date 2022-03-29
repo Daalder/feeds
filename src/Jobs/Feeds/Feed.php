@@ -116,31 +116,39 @@ abstract class Feed implements ShouldQueue
 
         // Prepare filename and path
         $fileName = $this->store->code.'.'.$this->type;
-        $localFileName = storage_path().'/feeds/'.$this->vendor.'/'.$fileName;
+        $localFilePath = storage_path().'/feeds/'.$this->vendor.'/'.$fileName;
 
         $feedHeader = $this->formatFeedLine($this->fieldNames);
 
         // Write the header (first row) of the feed
-        File::put($localFileName, $feedHeader);
+        File::put($localFilePath, $feedHeader);
 
         // Query products
         $query = $this->getProductQuery();
 
         // Chunk-process the products
-        $query->chunk($this->chunkSize, function($products) use ($localFileName) {
+        $query->chunk($this->chunkSize, function($products) use ($localFilePath) {
             // Filter products by isPushable
             $validProducts = $products->filter->isPushable();
 
             // Map the validProducts into feed rows
             $feedLines = $validProducts
-                ->map(function($product) use ($localFileName) {
+                ->map(function($product) use ($localFilePath) {
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
                         $feedRow = $this->productToFeedRow($product);
 
+                        // If feedRow is invalid, skip it
+                        if(!$feedRow) {
+                            return '';
+                        }
+
+                        // Overwrite preconfigured fields for this vendor
                         $fieldOverwrites = config('daalder-feeds.field-overwrites.'.$this->vendor);
-                        foreach($fieldOverwrites as $field => $value) {
-                            $feedRow[$field] = $value;
+                        if($fieldOverwrites) {
+                            foreach($fieldOverwrites as $field => $value) {
+                                $feedRow[$field] = $value;
+                            }
                         }
 
                         // Format and return the feed row
@@ -155,11 +163,12 @@ abstract class Feed implements ShouldQueue
                 ->implode('');
 
             // Append the feed rows for the product chunk to the feed file
-            File::append($localFileName, $feedLines);
+            File::append($localFilePath, $feedLines);
         });
 
         // Upload the file to S3
-        $this->uploadToS3($localFileName);
+        $this->uploadToS3($localFilePath);
+        $this->removeLocalFile($localFilePath);
     }
 
     protected function getCountryCode()
@@ -206,9 +215,9 @@ abstract class Feed implements ShouldQueue
     }
 
     /**
-     * @param $source
+     * @param string $source
      */
-    protected function uploadToS3($source)
+    protected function uploadToS3(string $localFilePath)
     {
         // Prepare path to file on S3
         $targetDirectory = $this->store->code.'/'.$this->vendor;
@@ -255,10 +264,14 @@ abstract class Feed implements ShouldQueue
             [
                 'Bucket' => $this->feedsBucket,
                 'Key' => $targetPath,
-                'SourceFile' => $source,
+                'SourceFile' => $localFilePath,
                 'ACL' => 'public-read',
             ]
         );
+    }
+
+    protected function removeLocalFile(string $localFilePath) {
+        File::delete($localFilePath);
     }
 
     protected function formatFeedLine(array $fields) {
@@ -323,11 +336,11 @@ abstract class Feed implements ShouldQueue
     /**
      * The job failed to process.
      *
-     * @param  \Exception  $exception
+     * @param  \Exception|\Error  $exception
      *
      * @return void
      */
-    public function failed(Exception $exception): void
+    public function failed($exception): void
     {
         event(new FeedJobFailed($exception));
     }
