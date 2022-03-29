@@ -32,7 +32,7 @@ class GoogleFeed extends Feed
         'expiration_date',
         'condition',
         'product_type',
-        'google_product_category',
+//        'google_product_category',
         'payment_accepted',
         'gtin',
         'brand',
@@ -90,8 +90,7 @@ class GoogleFeed extends Feed
             'expiration_date' => now()->addWeeks(2)->toDateString(),
             'condition' => 'new',
             'product_type' => ($product->group_id !== null) ? $product->group->name : '(not set)',
-            //The category
-            'google_product_category' => $product->productattributeset ? $product->productattributeset->name : null,
+//            'google_product_category' => $product->productattributeset ? $product->productattributeset->name : null,
             'payment_accepted' => 'IDEAL,Paypal,BanContact Mister Cash,Bankoverschrijving',
             'gtin' => $product->ean,
             'brand' => '', //Filled below
