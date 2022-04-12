@@ -44,9 +44,11 @@ class NetrivalsFeed extends Feed
             ->where('code', 'netrivals-prijsvergelijk')
             ->with('properties')
             ->first();
+
         if (!$attribute) {
-            return;
+            return null;
         }
+
         $property = $attribute->properties->first();
 
         // Find products to include in the feed

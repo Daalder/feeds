@@ -102,7 +102,7 @@ abstract class Feed implements ShouldQueue
             // Include brand and attributeset relationships
             ->with(['brand', 'productattributeset']);
     }
-    
+
     private function generate() {
         // Create storage/feeds directory if it doesn't exist
         if (!File::exists(storage_path('feeds'))) {
@@ -125,6 +125,10 @@ abstract class Feed implements ShouldQueue
 
         // Query products
         $query = $this->getProductQuery();
+
+        if(!$query) {
+            return;
+        }
 
         // Chunk-process the products
         $query->chunk($this->chunkSize, function($products) use ($localFilePath) {
@@ -396,7 +400,7 @@ abstract class Feed implements ShouldQueue
                 return (int) ceil($marge / 2.5);
         }
     }
-    
+
     /**
      * @param  Product  $product
      * @return int
@@ -415,7 +419,7 @@ abstract class Feed implements ShouldQueue
 
         return ($tag) ? $tag->name : null;
     }
-    
+
     /**
      * @param  Product  $product
      * @return string|null
