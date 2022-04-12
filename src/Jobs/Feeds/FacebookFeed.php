@@ -5,6 +5,7 @@ namespace App\Jobs\Feeds;
 namespace Daalder\Feeds\Jobs\Feeds;
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
+use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
 use Pionect\Daalder\Models\Shipping\ShippingMethod;
 use Pionect\Daalder\Services\MoneyFactory;
 
@@ -46,20 +47,22 @@ class FacebookFeed extends Feed
      */
     ];
 
+    protected function getProductQuery() {
+        $query = parent::getProductQuery();
+
+        return $query
+            ->whereNotIn('productattributeset_id', $this->excludedGoogleAttributeSets)
+            ->where('is_for_sale', '!=', 0)
+            ->whereNull('deleted_at')
+            ->whereHas('productproperties', function($query) {
+                $query
+                    ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
+                    ->where('code', 'include-in-google-feed')
+                    ->where('value', '1');
+            });
+    }
+
     protected function productToFeedRow(Product $product) {
-        if (in_array($product->productattributeset_id, $this->excludedGoogleAttributeSets) || $product->getProperty('excludegooglefeed')) {
-            return false;
-        }
-
-        // exclude temperory out of stock items
-        if ($product->is_for_sale == 0) {
-            return false;
-        }
-
-        // exclude deleted products
-        if (! is_null($product->deleted_at)) {
-            return false;
-        }
 
         $priceObject = $product->getCurrentPrice();
         $currency = optional(optional($priceObject)->currency)->code ?? $this->getCurrency($product);
