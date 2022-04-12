@@ -4,7 +4,7 @@ namespace Daalder\Feeds\Jobs\Feeds;
 
 /**
  * @see https://prisguiden.no/om-oss/nyheter-og-presse/slik-gjoer-du-produktene-tilgjengelig-paa-prisguiden-277
- * Class PrisguidenFeed
+ * Class PrisguidenShippingFeed
  */
 class PrisguidenShippingFeed extends Feed
 {
@@ -13,7 +13,7 @@ class PrisguidenShippingFeed extends Feed
 
     /** @var string */
     public $vendor = 'prisguiden-shipping';
-    
+
     /** @var string[] */
     public $fieldNames = [
         'ean',

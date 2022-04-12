@@ -59,7 +59,7 @@ class PrisguidenFeed extends Feed
 
         $fields = [
             'name' => $product->name,
-            'price' => $this->getFormattedPrice($priceObject),
+            'price' => $this->getFormattedPrice($product),
             'url' => $host.'/'.$product->url,
             'image_url' => $this->getImageLink($product),
             'id' => $product->id,
