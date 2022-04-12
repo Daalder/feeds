@@ -39,7 +39,7 @@ class PrisguidenFeed extends Feed
         $host = $this->getHost();
 
         $priceObject = $product->getCurrentPrice();
-        $currency = optional(optional($priceObject)->currency)->code ?? $this->getCurrency();
+        $currency = optional(optional($priceObject)->currency)->code ?? $this->getCurrency($product);
         $countryCode = $this->getCountryCode();
 
         $shipping = '';
@@ -56,7 +56,7 @@ class PrisguidenFeed extends Feed
             $shipping .= ':';
             $shipping .= MoneyFactory::toString($rate->price).' '.$currency;
         }
-        
+
         $fields = [
             'name' => $product->name,
             'price' => $this->getFormattedPrice($priceObject),

@@ -50,19 +50,19 @@ class FacebookFeed extends Feed
         if (in_array($product->productattributeset_id, $this->excludedGoogleAttributeSets) || $product->getProperty('excludegooglefeed')) {
             return false;
         }
-    
+
         // exclude temperory out of stock items
         if ($product->is_for_sale == 0) {
             return false;
         }
-    
+
         // exclude deleted products
         if (! is_null($product->deleted_at)) {
             return false;
         }
 
         $priceObject = $product->getCurrentPrice();
-        $currency = optional(optional($priceObject)->currency)->code ?? $this->getCurrency();
+        $currency = optional(optional($priceObject)->currency)->code ?? $this->getCurrency($product);
         $countryCode = $this->getCountryCode();
 
         $shipping = '';
@@ -87,7 +87,7 @@ class FacebookFeed extends Feed
                 $shippingTime = 1;
             }
         }
-    
+
         $fields = [
             'id' => $product->sku,
             'title' => $product->name,
@@ -111,7 +111,7 @@ class FacebookFeed extends Feed
             'custom_label_3' => $shippingTime,                                  // Order before tuesday, delivered the same week
             'custom_label_4' => $this->getTag($product),                        // First tag that starts with G:
         ];
-    
+
         if (optional($priceObject)->list_price && optional($priceObject)->list_price != 0) {
             // Temporary check for daalder ~13.5.5
             if(optional($priceObject)->list_price != optional($priceObject)->price) {
@@ -119,7 +119,7 @@ class FacebookFeed extends Feed
                 $fields['sale_price'] = $this->getFormattedPrice($priceObject);
             }
         }
-    
+
         return $fields;
     }
 }
