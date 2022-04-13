@@ -38,31 +38,19 @@ class NetrivalsFeed extends Feed
         'tags',
     ];
 
-    protected function getProductQuery()
-    {
-        $attribute = ProductAttribute::query()
-            ->has('properties')
-            ->where('code', 'netrivals-prijsvergelijk')
-            ->with('properties')
-            ->first();
+    protected function getProductQuery() {
+        $query = parent::getProductQuery();
 
-        if (!$attribute) {
-            return null;
-        }
-
-        $property = $attribute->properties->first();
-
-        // Find products to include in the feed
-        $productIds = ProductProductProperty::query()
-            ->where('value', 1)
-            ->where('productproperty_id', $property->id)
-            ->pluck('product_id');
-
-        return $this->productRepository->newQuery()
+        return $query
             ->with('vatRates', 'stock')
-            ->whereIn('id', $productIds)
             ->whereNull('deleted_at')
-            ->whereNotNull('ean');
+            ->whereNotNull('ean')
+            ->whereHas('productproperties', function($query) {
+                $query
+                    ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
+                    ->where('code', 'netrivals-prijsvergelijk')
+                    ->where('value', '1');
+            });
     }
 
     protected function productToFeedRow(Product $product)

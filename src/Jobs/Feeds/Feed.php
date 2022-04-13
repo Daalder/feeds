@@ -89,6 +89,9 @@ abstract class Feed implements ShouldQueue
 
     abstract protected function productToFeedRow(Product $product);
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     protected function getProductQuery() {
         return $this->productRepository->newQuery()
             // that have products
@@ -141,11 +144,6 @@ abstract class Feed implements ShouldQueue
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
                         $feedRow = $this->productToFeedRow($product);
-
-                        // If feedRow is invalid, skip it
-                        if(!$feedRow) {
-                            return '';
-                        }
 
                         // Overwrite preconfigured fields for this vendor
                         $fieldOverwrites = config('daalder-feeds.field-overwrites.'.$this->vendor);

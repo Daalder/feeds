@@ -30,6 +30,12 @@ class ShoprFeed extends Feed
         'description',
     ];
 
+    protected function getProductQuery() {
+        $query = parent::getProductQuery();
+
+        return $query->has('categories');
+    }
+
     protected function productToFeedRow(Product $product)
     {
         $priceAsMoney = optional($product->getCurrentPrice())->priceAsMoney();
@@ -53,38 +59,18 @@ class ShoprFeed extends Feed
             'price' => $price,
             'url' => $this->getHost(),
             'shop_product_id' => $product->id,
-            'category' => '', //gets filled later
+            'category' => $product->categories->first()->name,
             'delivery_time' => $product->shippingTime->name ?? $this->getDelivery($product),
             'additional_costs' => $shippingCost,
-            'image_1' => '', //gets filled later
+            'image_1' => $product->images->first()->src,
             'group_id' => '', //gets filled later
             'gtin' => $product->ean,
             'brand' => '', //gets filled later
             'description' => strip_tags($product->description),
         ];
 
-        /** @var Category $category */
-        $category = $product->categories->first();
-
-        if ($category) {
-            $fields['category'] = $category->name;
-        }
-
-        if (empty($fields['category'])) {
-            return false;
-        }
-
         if (!is_null($product->brand)) {
             $fields['brand'] = $product->brand->name;
-        }
-
-        $image = $product->images()
-            ->first();
-
-        if ($image) {
-            $fields['image_1'] = $image->src;
-        } else {
-            return false;
         }
 
         $variation = $product->productvariations->first();
