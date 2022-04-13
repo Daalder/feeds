@@ -29,13 +29,13 @@ trait CreatesTestProducts {
     }
 
     protected function createGoogleTestProducts() {
-        $includeInGoogleFeedProperty = $this->createGoogleAttributeProperty();
+//        $includeInGoogleFeedProperty = $this->createGoogleAttributeProperty();
 
         // Two products without images
         Product::factory()->count(2)->create();
 
         // Ten products with images
-        $products = Product::factory()->count(10)
+        $products = Product::factory()->count(8)
             ->hasImages(Media::factory()->create())
             ->create();
 
@@ -52,15 +52,15 @@ trait CreatesTestProducts {
                 ]);
         }
 
-        // Set the include-in-google-feed property to 1 for all products
-        foreach(Product::get() as $product) {
-            app(ProductRepository::class)->setPropertyValue($product, $includeInGoogleFeedProperty->id, 1);
-        }
+//        // Set the include-in-google-feed property to 1 for all products
+//        foreach(Product::get() as $product) {
+//            app(ProductRepository::class)->setPropertyValue($product, $includeInGoogleFeedProperty->id, 1);
+//        }
 
-        // Two of those ten products have a value of 0 for the include-in-google-feed property
-        foreach($products->random(2) as $product) {
-            app(ProductRepository::class)->setPropertyValue($product, $includeInGoogleFeedProperty->id, 0);
-        }
+//        // Two of those ten products have a value of 0 for the include-in-google-feed property
+//        foreach($products->random(2) as $product) {
+//            app(ProductRepository::class)->setPropertyValue($product, $includeInGoogleFeedProperty->id, 0);
+//        }
 
         $this->validTestProducts = 8;
     }
