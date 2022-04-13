@@ -37,8 +37,8 @@ trait CreatesTestProducts {
 
         // One product per attributeset in the excludedGoogleAttributeSets array
         foreach((new GoogleFeed(Store::first()))->excludedGoogleAttributeSets as $blockedAttributeSetId) {
-            Product::factory()->create([
-                'productattributeset_id' => $blockedAttributeSetId,
+            Product::factory()->hasProductattributeset([
+                'id' => $blockedAttributeSetId,
             ]);
         }
 
