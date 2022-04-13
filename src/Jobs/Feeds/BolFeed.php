@@ -27,6 +27,8 @@ class BolFeed extends Feed
     ];
 
     protected function getProductQuery() {
+        $query = parent::getProductQuery();
+
         $supplierRates = [
             'KBT' => 9.5,
             'Westwood' => 8.5,
@@ -45,7 +47,7 @@ class BolFeed extends Feed
             $brands = array_merge($brands, $supplier->brands->pluck('id')->all());
         }
 
-        return $this->productRepository->newQuery()
+        return $query
             ->where('exclude_bol_export', '!=', '1')
             ->whereIn('brand_id', $brands)
             ->whereNotNull('ean');

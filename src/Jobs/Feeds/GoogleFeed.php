@@ -4,6 +4,7 @@ namespace Daalder\Feeds\Jobs\Feeds;
 
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
+use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
 use Pionect\Daalder\Models\Shipping\Rate;
 use Pionect\Daalder\Models\Shipping\ShippingMethod;
 use Pionect\Daalder\Services\MoneyFactory;
@@ -44,17 +45,23 @@ class GoogleFeed extends Feed
         'custom_label_4',
     ];
 
+    protected function getProductQuery()
+    {
+        $query = parent::getProductQuery();
+
+        return $query
+            ->whereNotIn('productattributeset_id', $this->excludedGoogleAttributeSets)
+            ->whereNull('deleted_at')
+            ->whereHas('productproperties', function($query) {
+                $query
+                    ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
+                    ->where('code', 'include-in-google-feed')
+                    ->where('value', '1');
+            });
+    }
+
     protected function productToFeedRow(Product $product)
     {
-        if (in_array($product->productattributeset_id, $this->excludedGoogleAttributeSets) || !is_null($product->deleted_at)) {
-            return false;
-        }
-
-        $includeInGoogleFeed = optional(optional($product->getProperty('include-in-google-feed'))->pivot)->value;
-
-        if (!is_null($includeInGoogleFeed) && $includeInGoogleFeed == false) {
-            return false;
-        }
         
         $priceObject = $product->getCurrentPrice();
         $currency = $this->getCurrency($product);

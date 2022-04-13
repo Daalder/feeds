@@ -60,6 +60,12 @@ class AdmarktFeed extends Feed
         'image24',
     ];
 
+    protected function getProductQuery() {
+        $query = parent::getProductQuery();
+
+        return $query->where('delivery', '!=', 55);
+    }
+
     protected function productToFeedRow(Product $product) {
         $shipping_weight = ($product->weight != '') ? $product->weight : 1;
 
@@ -86,10 +92,6 @@ class AdmarktFeed extends Feed
 
         if (!is_null($product->brand)) {
             $fields['brand'] = $product->brand->name;
-        }
-
-        if ($product->delivery == 51) {
-            return false;
         }
 
         $i = 1;
