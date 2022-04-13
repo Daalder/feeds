@@ -55,10 +55,10 @@ abstract class Feed implements ShouldQueue
     protected $fieldNames;
 
     /** @var string */
-    public $type = '';
+    public $type;
 
     /** @var string */
-    public $vendor = 'admarkt';
+    public $vendor;
 
     /**
      * Feed constructor.
@@ -79,6 +79,10 @@ abstract class Feed implements ShouldQueue
      */
     public function handle(Product $productRepository, S3ClientInterface $s3Client)
     {
+        if ($this->batch()->cancelled()) {
+            return;
+        }
+
         $this->productRepository = $productRepository;
         $this->s3Client = $s3Client;
 
