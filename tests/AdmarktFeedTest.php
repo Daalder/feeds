@@ -2,25 +2,25 @@
 
 namespace Daalder\Feeds\Tests;
 
-use Daalder\Feeds\Jobs\Feeds\GoogleFeed;
+use Daalder\Feeds\Jobs\Feeds\AdmarktFeed;
 use Pionect\Daalder\Models\Store\Store;
 
 /**
- * Class GoogleFeedTest
+ * Class AdmarktFeedTest
  * @package Daalder\Feeds\Tests
  */
-class GoogleFeedTest extends FeedsTestBase
+class AdmarktFeedTest extends FeedsTestBase
 {
     protected function setUp(): void
     {
         parent::setUp();
-        $this->createGoogleTestProducts();
+        $this->createAdmarktTestProducts();
     }
 
     /** @test */
     public function it_can_generate_feed()
     {
-        $this->generate_feed_basetest(GoogleFeed::class, Store::first());
+        $this->generate_feed_basetest(AdmarktFeed::class, Store::first());
     }
 
     /** @test */
@@ -29,7 +29,7 @@ class GoogleFeedTest extends FeedsTestBase
         $store = Store::first();
 
         try {
-            $feedJob = new GoogleFeed($store);
+            $feedJob = new AdmarktFeed($store);
             $feedJob::dispatchSync($store);
         } catch(\InvalidArgumentException $e) {
             // AWS credentials aren't configured

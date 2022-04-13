@@ -12,6 +12,8 @@ use Pionect\Daalder\Models\ProductAttribute\Set;
 use Pionect\Daalder\Models\Store\Store;
 
 trait CreatesTestProducts {
+    public int $validTestProducts;
+
     private function createGoogleAttributeProperty() {
         $attribute = ProductAttribute::factory()->create([
             'code' => 'include-in-google-feed',
@@ -26,7 +28,7 @@ trait CreatesTestProducts {
         ]);
     }
 
-    private function createGoogleTestProducts() {
+    protected function createGoogleTestProducts() {
         $includeInGoogleFeedProperty = $this->createGoogleAttributeProperty();
 
         // Two products without images
@@ -59,5 +61,23 @@ trait CreatesTestProducts {
         foreach($products->random(2) as $product) {
             app(ProductRepository::class)->setPropertyValue($product, $includeInGoogleFeedProperty->id, 0);
         }
+
+        $this->validTestProducts = 8;
+    }
+
+    protected function createAdmarktTestProducts() {
+        // Two products without images
+        Product::factory()->count(2)->create();
+
+        // Ten products with images
+        $products = Product::factory()->count(10)
+            ->hasImages(Media::factory()->create())
+            ->create();
+
+        $products->random(2)->update([
+            'delivery' => 55,
+        ]);
+
+        $this->validTestProducts = 8;
     }
 }

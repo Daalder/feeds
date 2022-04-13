@@ -8,6 +8,7 @@ use Closure;
 use Exception;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -23,7 +24,7 @@ use Pionect\Daalder\Models\Store\Store;
 use Pionect\Daalder\Services\ActiveStore;
 use Pionect\Daalder\Services\MoneyFactory;
 
-abstract class Feed implements ShouldQueue
+abstract class Feed implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, Queueable, Batchable, InteractsWithQueue;
 
@@ -457,5 +458,10 @@ abstract class Feed implements ShouldQueue
         }
 
         return $path;
+    }
+
+    public function uniqueId()
+    {
+        return $this->vendor.$this->store;
     }
 }
