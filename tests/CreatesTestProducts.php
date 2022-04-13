@@ -74,7 +74,7 @@ trait CreatesTestProducts {
             ->hasImages(Media::factory()->create())
             ->create();
 
-        $products->random(2)->update([
+        $products->random(2)->each->update([
             'delivery' => 55,
         ]);
 
