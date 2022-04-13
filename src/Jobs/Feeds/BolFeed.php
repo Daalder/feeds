@@ -87,6 +87,7 @@ class BolFeed extends Feed
             'Images' => $images,
             'EAN' => $product->ean,
             'BOL prijs' => $bolPrice,
+            'Commissie' => '',
         ];
 
         return $fields;

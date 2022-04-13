@@ -5,7 +5,6 @@ namespace Daalder\Feeds\Jobs\Feeds;
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
-use Pionect\Daalder\Models\Shipping\Rate;
 use Pionect\Daalder\Models\Shipping\ShippingMethod;
 use Pionect\Daalder\Services\MoneyFactory;
 
@@ -62,7 +61,6 @@ class GoogleFeed extends Feed
 
     protected function productToFeedRow(Product $product)
     {
-        
         $priceObject = $product->getCurrentPrice();
         $currency = $this->getCurrency($product);
         $countryCode = $this->getCountryCode();

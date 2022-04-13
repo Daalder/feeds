@@ -46,7 +46,7 @@ abstract class Feed implements ShouldQueue
     protected $chunkSize = 50;//500;
 
     /** @var integer[] */
-    protected $excludedGoogleAttributeSets = [720];
+    public $excludedGoogleAttributeSets = [720];
 
     /** @var integer */
     public $timeout = 7200;
@@ -180,7 +180,7 @@ abstract class Feed implements ShouldQueue
 
     protected function getCurrency(Product $product)
     {
-        return optional(optional($product->getCurrentPrice())->currency)->symbol ?? $this->store->currency_code;
+        return optional(optional($product->getCurrentPrice())->currency)->code ?? $this->store->currency_code;
     }
 
     protected function getFormattedPrice(Product $product)
@@ -194,7 +194,8 @@ abstract class Feed implements ShouldQueue
         $currency = $this->getCurrency($product);
         $priceAsMoney = $price->priceAsMoney();
 
-        return MoneyFactory::format($priceAsMoney);
+        $price = (float)$priceAsMoney->getAmount() / 100;
+        return round($price, 2) .' '. $currency->code;
     }
 
     protected function getFormattedListPrice(Product $product)
@@ -213,7 +214,8 @@ abstract class Feed implements ShouldQueue
         $currency = $this->getCurrency($product);
         $listPriceAsMoney = $price->listPriceAsMoney();
 
-        return MoneyFactory::format($listPriceAsMoney);
+        $price = (float)$listPriceAsMoney->getAmount() / 100;
+        return round($price, 2) .' '. $currency->code;
     }
 
     /**

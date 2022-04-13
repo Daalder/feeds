@@ -35,6 +35,7 @@ class NetrivalsFeed extends Feed
         'availability',
         'quantity',
         'description',
+        'tags',
     ];
 
     protected function getProductQuery() {
