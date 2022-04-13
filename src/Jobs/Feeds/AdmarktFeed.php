@@ -63,7 +63,11 @@ class AdmarktFeed extends Feed
     protected function getProductQuery() {
         $query = parent::getProductQuery();
 
-        return $query->where('delivery', '!=', 55);
+        return $query->where(function($query){
+            return $query
+                ->where('delivery', '!=', 55)
+                ->orWhereNull('delivery');
+        });
     }
 
     protected function productToFeedRow(Product $product) {
