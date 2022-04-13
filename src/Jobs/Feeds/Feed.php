@@ -199,7 +199,7 @@ abstract class Feed implements ShouldQueue
         $priceAsMoney = $price->priceAsMoney();
 
         $price = (float)$priceAsMoney->getAmount() / 100;
-        return round($price, 2) .' '. $currency->code;
+        return round($price, 2) .' '. $currency;
     }
 
     protected function getFormattedListPrice(Product $product)
@@ -219,7 +219,7 @@ abstract class Feed implements ShouldQueue
         $listPriceAsMoney = $price->listPriceAsMoney();
 
         $price = (float)$listPriceAsMoney->getAmount() / 100;
-        return round($price, 2) .' '. $currency->code;
+        return round($price, 2) .' '. $currency;
     }
 
     /**
