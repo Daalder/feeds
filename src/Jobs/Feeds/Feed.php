@@ -5,6 +5,7 @@ namespace Daalder\Feeds\Jobs\Feeds;
 use Aws\S3\S3Client;
 use Aws\S3\S3ClientInterface;
 use Closure;
+use Daalder\Feeds\Events\AfterCreatingFeedProductQuery;
 use Exception;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
@@ -133,6 +134,10 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
         // Query products
         $query = $this->getProductQuery();
+
+        $event = new AfterCreatingFeedProductQuery(get_class($this), $query);
+        event($event);
+        $query = $event->getProductsQuery();
 
         if(!$query) {
             return;
