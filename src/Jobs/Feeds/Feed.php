@@ -46,7 +46,7 @@ abstract class Feed implements ShouldQueue
     protected $chunkSize = 50;//500;
 
     /** @var integer[] */
-    protected $excludedGoogleAttributeSets = [720];
+    public $excludedGoogleAttributeSets = [720];
 
     /** @var integer */
     public $timeout = 7200;
