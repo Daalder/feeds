@@ -82,6 +82,30 @@ class AdmarktFeed extends Feed
             'brand' => '', //Filled below
             'mpn' => $product->sku,
             'adwords_label' => '', //Filled below
+            'image1', // Filled below
+            'image2', // Filled below
+            'image3', // Filled below
+            'image4', // Filled below
+            'image5', // Filled below
+            'image6', // Filled below
+            'image7', // Filled below
+            'image8', // Filled below
+            'image9', // Filled below
+            'image10', // Filled below
+            'image11', // Filled below
+            'image12', // Filled below
+            'image13', // Filled below
+            'image14', // Filled below
+            'image15', // Filled below
+            'image16', // Filled below
+            'image17', // Filled below
+            'image18', // Filled below
+            'image19', // Filled below
+            'image20', // Filled below
+            'image21', // Filled below
+            'image22', // Filled below
+            'image23', // Filled below
+            'image24', // Filled below
         ];
 
         if (!is_null($product->brand)) {

@@ -27,6 +27,12 @@ class TestCase extends DaalderTestCase
                 '--provider' => PermissionServiceProvider::class
             ]);
 
+            // A Daalder migration (2021_09_18_175336_add_wizard_permissions.php) expects the permissions table to exist.
+            // Make sure the migration for that is run before the Daalder one.
+            $fromFileName = glob(__DIR__ . '/../vendor/orchestra/testbench-core/laravel/database/migrations/*_create_permission_tables.php')[0];
+            $toFileName = __DIR__ . '/../vendor/orchestra/testbench-core/laravel/database/migrations/2021_09_18_000000_create_permission_tables.php';
+            rename($fromFileName, $toFileName);
+
             $this->artisan('migrate:fresh', [
                 '--drop-views' => $this->shouldDropViews(),
                 '--drop-types' => $this->shouldDropTypes(),

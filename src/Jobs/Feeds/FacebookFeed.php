@@ -25,25 +25,24 @@ class FacebookFeed extends Feed
         'id',
         'title',
         'description',
-        'availability',
-        'inventory',
-        'condition',
-        'price',
         'link',
         'image_link',
-        'brand',
-        'google_product_category',
-        // category
-        'product_type',
+        'price',
         'sale_price',
+        'availability',
         'shipping',
-        'gtin',
-        'mpn',
         'expiration_date',
-
-    /**
-     * Fields we also want if possible:  Freight prices;  Product cost / margins.
-     */
+        'condition',
+        'product_type',
+        'google_product_category',
+        'gtin',
+        'brand',
+        'mpn',
+        'custom_label_0',
+        'custom_label_1',
+        'custom_label_2',
+        'custom_label_3',
+        'custom_label_4',
     ];
 
     protected function productToFeedRow(Product $product) {

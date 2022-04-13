@@ -4,7 +4,6 @@ namespace Daalder\Feeds\Jobs\Feeds;
 
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
-use Pionect\Daalder\Models\Shipping\Rate;
 use Pionect\Daalder\Models\Shipping\ShippingMethod;
 use Pionect\Daalder\Services\MoneyFactory;
 
