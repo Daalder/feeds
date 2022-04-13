@@ -79,7 +79,7 @@ abstract class Feed implements ShouldQueue
      */
     public function handle(Product $productRepository, S3ClientInterface $s3Client)
     {
-        if ($this->batch()->cancelled()) {
+        if (optional($this->batch())->cancelled()) {
             return;
         }
 
