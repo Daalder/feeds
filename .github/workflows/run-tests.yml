@@ -85,9 +85,10 @@ jobs:
 
 
             -   id: foo
-                uses: Daalder/run-tests-action@89870cf88fef34ff0246bb01eca81d3cb405d5e1
+                uses: Daalder/run-tests-action@1b203622dce7d022d63d0eaebe3162a0508d31ca
                 env:
                     COMPOSER_TOKEN: ${{ env.GITHUB_TOKEN }}
+                    PACKAGIST_TOKEN: ${{ secrets.DAALDER }}
 
             -   run: echo random-number ${{ steps.foo.outputs.random-number }}
                 shell: bash
