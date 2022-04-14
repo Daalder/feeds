@@ -185,7 +185,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
     protected function getCountryCode()
     {
-        return Str::upper(Str::after($this->store->default_locale, '_'));
+        return Str::upper(Str::after($this->store->defaultlanguage, '_'));
     }
 
     protected function getCurrency(Product $product)
@@ -204,8 +204,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         $currency = $this->getCurrency($product);
         $priceAsMoney = $price->priceAsMoney();
 
-        $price = (float)$priceAsMoney->getAmount() / 100;
-        return round($price, 2) .' '. $currency;
+        return MoneyFactory::toString($priceAsMoney) . ' ' . $currency;
     }
 
     protected function getFormattedListPrice(Product $product)
@@ -224,8 +223,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         $currency = $this->getCurrency($product);
         $listPriceAsMoney = $price->listPriceAsMoney();
 
-        $price = (float)$listPriceAsMoney->getAmount() / 100;
-        return round($price, 2) .' '. $currency;
+        return MoneyFactory::toString($listPriceAsMoney) . ' ' . $currency;
     }
 
     /**
