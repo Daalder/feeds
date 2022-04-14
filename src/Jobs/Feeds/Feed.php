@@ -127,7 +127,9 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         $fileName = $this->store->code.'.'.$this->type;
         $localFilePath = storage_path().'/feeds/'.$this->vendor.'/'.$fileName;
 
-        $feedHeader = $this->formatFeedLine($this->fieldNames);
+        // UTF-8 BOM and header (column names)
+        $feedHeader = chr(0xEF).chr(0xBB).chr(0xBF);
+        $feedHeader .= $this->formatFeedLine($this->fieldNames);
 
         // Write the header (first row) of the feed
         File::put($localFilePath, $feedHeader);
@@ -325,18 +327,23 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
      */
     protected function convertToCsvLine(array $fields)
     {
+        // Get cleaned-up fields
         $fields = array_map([$this, 'cleanValue'], $fields);
 
+        // Open a file in memory (max 1MB) and write the fields to them as CSV
         $handle = fopen('php://temp/maxmemory:1048576', 'w');
-
-        // UTF-8
-        fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
         fputcsv($handle, $fields);
 
+        // Rewind the position of the file handle
         rewind($handle);
+
+        // Get the contents of the in-memory file
         $productLine = stream_get_contents($handle);
+
+        // Close the file handle
         fclose($handle);
 
+        // Return the contents of the in-memory file
         return $productLine;
     }
 
