@@ -250,24 +250,28 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         if($currentFeed) {
             // Get the formatted date for when the currently active feed file was last modified and prepare a new filename using it
             $lastModifiedDate = $currentFeed->get('LastModified');
-            $lastModifiedDate = Carbon::createFromTimestamp($lastModifiedDate->getTimestamp())->toDateString();
-            $newNameForOldFeed = $this->vendor.'_'.$lastModifiedDate.'.'.$this->type;
+            $lastModifiedDate = Carbon::createFromTimestamp($lastModifiedDate->getTimestamp());
 
-            try {
-                // Attempt to get the backup file that's about to be created. This will throw an error if it doesn't
-                // exist yet. If no error is thrown, the backup file already exists and we don't overwrite it.
-                $this->s3Client->getObject([
-                    'Bucket' => $this->feedsBucket,
-                    "Key" => $targetDirectory.'/'.$newNameForOldFeed,
-                ]);
-            } catch(\Exception $e) {
-                // Copy the currently active feed file to {vendor}_{datestring}.{extension} as a backup
-                $currentFeed = $this->s3Client->copyObject([
-                    'Bucket' => $this->feedsBucket,
-                    "Key" => $targetDirectory.'/'.$newNameForOldFeed,
-                    "CopySource" => $this->feedsBucket.'/'.$targetPath,
-                    'MetadataDirective' => 'REPLACE'
-                ]);
+            // If currently active feed was not created today, back it up.
+            if($lastModifiedDate->ne(today())) {
+                $newNameForOldFeed = $this->vendor.'_'.$lastModifiedDate->toDateString().'.'.$this->type;
+
+                try {
+                    // Attempt to get the backup file that's about to be created. This will throw an error if it doesn't
+                    // exist yet. If no error is thrown, the backup file already exists and we don't overwrite it.
+                    $this->s3Client->getObject([
+                        'Bucket' => $this->feedsBucket,
+                        "Key" => $targetDirectory.'/'.$newNameForOldFeed,
+                    ]);
+                } catch(\Exception $e) {
+                    // Copy the currently active feed file to {vendor}_{datestring}.{extension} as a backup
+                    $currentFeed = $this->s3Client->copyObject([
+                        'Bucket' => $this->feedsBucket,
+                        "Key" => $targetDirectory.'/'.$newNameForOldFeed,
+                        "CopySource" => $this->feedsBucket.'/'.$targetPath,
+                        'MetadataDirective' => 'REPLACE'
+                    ]);
+                }
             }
         }
 
