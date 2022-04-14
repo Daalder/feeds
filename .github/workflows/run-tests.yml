@@ -85,7 +85,7 @@ jobs:
 
 
             -   id: foo
-                uses: actions/hello-world-composite-action@v1
+                uses: Daalder/run-tests-action@master
                 with:
                     who-to-greet: 'Mona the Octocat'
             -   run: echo random-number ${{ steps.foo.outputs.random-number }}
