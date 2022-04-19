@@ -141,21 +141,16 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         event($event);
         $query = $event->getProductsQuery();
 
-        $expectedProductCount = $query->count();
-
         if(!$query) {
             return;
         }
 
-        $chunkCount = 0;
+        $expectedProductCount = $query->count();
 
         // Chunk-process the products
-        $query->chunk($this->chunkSize, function($products) use ($localFilePath, &$chunkCount) {
-            // Filter products by isPushable
-            $validProducts = $products->filter->isPushable();
-
+        $query->chunk($this->chunkSize, function($products) use ($localFilePath) {
             // Map the validProducts into feed rows
-            $feedLines = $validProducts
+            $feedLines = $products
                 ->map(function($product) use ($localFilePath) {
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
@@ -180,9 +175,6 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                 // Implode the array of rows into a single string
                 ->implode('');
 
-            $chunkCount += $validProducts->count();
-            logger()->info($this->vendor . '.'. $this->store->code . ': ' . $chunkCount);
-
             // Append the feed rows for the product chunk to the feed file
             File::append($localFilePath, $feedLines);
         });
@@ -190,12 +182,12 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         // Get amount of products in feed (file line count - 2 for header and empty line at bottom)
         $actualProductCount = File::lines($localFilePath)->count() - 2;
 
-        logger()->info($this->vendor . '.'. $this->store->code . ': finished with chunkCount ' . $chunkCount . ' and file lines '.$actualProductCount.', should be ~'. $expectedProductCount .' products');
+        logger()->info($this->vendor . '.'. $this->store->code . ': finished with file line count '.$actualProductCount.', should be ~'. $expectedProductCount .' products');
 
-//        // If line count in feed is not right, don't proceed to upload to S3
-//        if($actualProductCount !== $expectedProductCount) {
-//            throw new \Error('Feed should contain ' . $expectedProductCount . ' products, but instead contains ' . $actualProductCount . ' products. Cancelling upload.');
-//        }
+        // If line count in feed is not right, don't proceed to upload to S3
+        if($actualProductCount !== $expectedProductCount) {
+            throw new \Error('Feed should contain ' . $expectedProductCount . ' products, but instead contains ' . $actualProductCount . ' products. Cancelling upload.');
+        }
 
         // Upload the file to S3
         $this->uploadToS3($localFilePath);
