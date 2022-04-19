@@ -145,8 +145,10 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             return;
         }
 
+        $chunkCount = 0;
+
         // Chunk-process the products
-        $query->chunk($this->chunkSize, function($products) use ($localFilePath) {
+        $query->chunk($this->chunkSize, function($products) use ($localFilePath, &$chunkCount) {
             // Filter products by isPushable
             $validProducts = $products->filter->isPushable();
 
@@ -176,6 +178,9 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                 // Implode the array of rows into a single string
                 ->implode('');
 
+            $chunkCount += $this->chunkSize;
+            logger()->info($this->vendor . '.'. $this->store->code . ': ' . $chunkCount);
+
             // Append the feed rows for the product chunk to the feed file
             File::append($localFilePath, $feedLines);
         });
@@ -184,10 +189,12 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         $actualProductCount = File::lines($localFilePath) - 2;
         $expectedProductCount = $query->count();
 
-        // If line count in feed is not right, don't proceed to upload to S3
-        if($actualProductCount !== $expectedProductCount) {
-            throw new \Error('Feed should contain ' . $expectedProductCount . ' products, but instead contains ' . $actualProductCount . ' products. Cancelling upload.');
-        }
+        logger()->info($this->vendor . '.'. $this->store->code . ': finished with chunkCount ' . $chunkCount . ' and file lines '.$actualProductCount.', should be ~'. $expectedProductCount .' products');
+
+//        // If line count in feed is not right, don't proceed to upload to S3
+//        if($actualProductCount !== $expectedProductCount) {
+//            throw new \Error('Feed should contain ' . $expectedProductCount . ' products, but instead contains ' . $actualProductCount . ' products. Cancelling upload.');
+//        }
 
         // Upload the file to S3
         $this->uploadToS3($localFilePath);
