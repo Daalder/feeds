@@ -180,7 +180,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                 // Implode the array of rows into a single string
                 ->implode('');
 
-            $chunkCount += $this->chunkSize;
+            $chunkCount += $validProducts->count();
             logger()->info($this->vendor . '.'. $this->store->code . ': ' . $chunkCount);
 
             // Append the feed rows for the product chunk to the feed file
