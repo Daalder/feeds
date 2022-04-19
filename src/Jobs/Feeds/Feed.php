@@ -141,6 +141,8 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         event($event);
         $query = $event->getProductsQuery();
 
+        $expectedProductCount = $query->count();
+
         if(!$query) {
             return;
         }
@@ -187,7 +189,6 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
         // Get amount of products in feed (file line count - 2 for header and empty line at bottom)
         $actualProductCount = File::lines($localFilePath)->count() - 2;
-        $expectedProductCount = $query->count();
 
         logger()->info($this->vendor . '.'. $this->store->code . ': finished with chunkCount ' . $chunkCount . ' and file lines '.$actualProductCount.', should be ~'. $expectedProductCount .' products');
 
