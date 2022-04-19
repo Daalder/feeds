@@ -26,6 +26,3 @@ jobs:
                     COMPOSER_TOKEN: ${{ env.GITHUB_TOKEN }}
                     PACKAGIST_TOKEN: ${{ secrets.DAALDER }}
                     SLACK_BEARER_TOKEN: ${{ secrets.SLACK_BEARER_TOKEN }}
-
-            -   run: echo random-number ${{ steps.foo.outputs.random-number }}
-                shell: bash
