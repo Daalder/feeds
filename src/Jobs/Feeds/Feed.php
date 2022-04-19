@@ -180,6 +180,15 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             File::append($localFilePath, $feedLines);
         });
 
+        // Get amount of products in feed (file line count - 2 for header and empty line at bottom)
+        $actualProductCount = File::lines($localFilePath) - 2;
+        $expectedProductCount = $query->count();
+
+        // If line count in feed is not right, don't proceed to upload to S3
+        if($actualProductCount !== $expectedProductCount) {
+            throw new \Error('Feed should contain ' . $expectedProductCount . ' products, but instead contains ' . $actualProductCount . ' products. Cancelling upload.');
+        }
+
         // Upload the file to S3
         $this->uploadToS3($localFilePath);
         $this->removeLocalFile($localFilePath);
