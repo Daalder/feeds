@@ -151,8 +151,11 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
         // Chunk-process the products
         $query->chunk($this->chunkSize, function($products) use ($localFilePath, &$chunkCount) {
+            // Filter products by isPushable
+            $validProducts = $products->filter->isPushable();
+
             // Map the validProducts into feed rows
-            $feedLines = $products
+            $feedLines = $validProducts
                 ->map(function($product) use ($localFilePath) {
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
