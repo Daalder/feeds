@@ -127,6 +127,11 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         $fileName = $this->store->code.'.'.$this->type;
         $localFilePath = storage_path().'/feeds/'.$this->vendor.'/'.$fileName;
 
+        // Remove local feed file if it exists
+        if (File::exists($localFilePath)) {
+            $this->removeLocalFile($localFilePath);
+        }
+
         // UTF-8 BOM and header (column names)
         $feedHeader = chr(0xEF).chr(0xBB).chr(0xBF);
         $feedHeader .= $this->formatFeedLine($this->fieldNames);
@@ -483,8 +488,14 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         return $path;
     }
 
+    public function fail($exception = null)
+    {
+        // TODO: Calculate $localFilePath and uncomment line below
+//        $this->removeLocalFile($localFilePath);
+    }
+
     public function uniqueId()
     {
-        return $this->vendor.$this->store;
+        return $this->vendor.$this->store->code;
     }
 }
