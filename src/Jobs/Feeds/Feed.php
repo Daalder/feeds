@@ -173,7 +173,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                         return $this->formatFeedLine($feedRow);
                     } catch (\Exception $ex) {
                         // Log exception and return an empty string
-                        logger()->error("Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
+                        logger()->error($this->vendor . '.'. $this->store->code . ": Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
                         return '';
                     }
                 })
@@ -187,11 +187,11 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         // Get amount of products in feed (file line count - 2 for header and empty line at bottom)
         $actualProductCount = File::lines($localFilePath)->count() - 2;
 
-        logger()->info($this->vendor . '.'. $this->store->code . ': finished with file line count '.$actualProductCount.', should be ~'. $expectedProductCount .' products');
+        logger()->info($this->vendor . '.'. $this->store->code . ': Finished with file line count '.$actualProductCount.', should be ~'. $expectedProductCount .' products');
 
         // If line count in feed is not right, don't proceed to upload to S3
         if($actualProductCount !== $expectedProductCount) {
-            throw new \Error('Feed should contain ' . $expectedProductCount . ' products, but instead contains ' . $actualProductCount . ' products. Cancelling upload.');
+            throw new \Error($this->vendor . '.'. $this->store->code . ': Feed should contain ' . $expectedProductCount . ' products, but instead contains ' . $actualProductCount . ' products. Cancelling upload.');
         }
 
         // Upload the file to S3
