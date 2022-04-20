@@ -72,7 +72,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         $this->store = $store;
         $this->feedsBucket = config('daalder-feeds.bucket');
 
-        $this->onQueue('feeds');
+        $this->onQueue('high');
     }
 
     /**

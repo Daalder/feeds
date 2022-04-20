@@ -59,6 +59,7 @@ class GenerateFeedsCommand extends Command
 
                 event(new CommandHeartBeat('feeds-generated'));
             })
+            ->onQueue('high')
             ->allowFailures()
             ->dispatch();
 
