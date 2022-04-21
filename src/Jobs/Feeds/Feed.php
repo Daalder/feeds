@@ -4,9 +4,7 @@ namespace Daalder\Feeds\Jobs\Feeds;
 
 use Aws\S3\S3Client;
 use Aws\S3\S3ClientInterface;
-use Closure;
 use Daalder\Feeds\Events\AfterCreatingFeedProductQuery;
-use Exception;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -16,11 +14,10 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Pionect\Daalder\Events\Feed\FeedJobFailed;
-use Pionect\Daalder\Models\Price\Price;
 use Pionect\Daalder\Models\Product\Product;
+use Pionect\Daalder\Models\Product\Repositories\ProductRepository;
 use Pionect\Daalder\Models\Store\Store;
 use Pionect\Daalder\Services\ActiveStore;
 use Pionect\Daalder\Services\MoneyFactory;
@@ -29,7 +26,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 {
     use Dispatchable, Queueable, Batchable, InteractsWithQueue;
 
-    /** @var Product */
+    /** @var ProductRepository */
     protected $productRepository;
 
     /** @var Store */
@@ -76,10 +73,10 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     }
 
     /**
-     * @param  Product  $productRepository
+     * @param  ProductRepository  $productRepository
      * @param  S3Client|S3ClientInterface  $s3Client
      */
-    public function handle(Product $productRepository, S3ClientInterface $s3Client)
+    public function handle(ProductRepository $productRepository, S3ClientInterface $s3Client)
     {
         if (optional($this->batch())->cancelled()) {
             return;
@@ -153,7 +150,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         $expectedProductCount = $query->count();
 
         // Chunk-process the products
-        $query->chunk($this->chunkSize, function($products) use ($localFilePath) {
+        $query->chunkById($this->chunkSize, function($products) use ($localFilePath) {
             // Map the validProducts into feed rows
             $feedLines = $products
                 ->map(function($product) use ($localFilePath) {
