@@ -59,6 +59,9 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     /** @var string */
     public $vendor;
 
+    /** @var string */
+    public $filePath;
+
     /**
      * Feed constructor.
      *
@@ -121,12 +124,13 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         }
 
         // Prepare filename and path
-        $fileName = $this->store->code.'.'.$this->type;
-        $localFilePath = storage_path().'/feeds/'.$this->vendor.'/'.$fileName;
+        $randomString = bin2hex(random_bytes(5));
+        $fileName = $this->store->code.'_'.$randomString.'.'.$this->type;
+        $this->filePath = storage_path().'/feeds/'.$this->vendor.'/'.$fileName;
 
         // Remove local feed file if it exists
-        if (File::exists($localFilePath)) {
-            $this->removeLocalFile($localFilePath);
+        if (File::exists($this->filePath)) {
+            $this->removeLocalFile();
         }
 
         // UTF-8 BOM and header (column names)
@@ -134,7 +138,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         $feedHeader .= $this->formatFeedLine($this->fieldNames);
 
         // Write the header (first row) of the feed
-        File::put($localFilePath, $feedHeader);
+        File::put($this->filePath, $feedHeader);
 
         // Query products
         $query = $this->getProductQuery();
@@ -150,10 +154,10 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         $expectedProductCount = $query->count();
 
         // Chunk-process the products
-        $query->chunkById($this->chunkSize, function($products) use ($localFilePath) {
+        $query->chunkById($this->chunkSize, function($products) {
             // Map the validProducts into feed rows
             $feedLines = $products
-                ->map(function($product) use ($localFilePath) {
+                ->map(function($product) {
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
                         $feedRow = $this->productToFeedRow($product);
@@ -178,11 +182,11 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                 ->implode('');
 
             // Append the feed rows for the product chunk to the feed file
-            File::append($localFilePath, $feedLines);
+            File::append($this->filePath, $feedLines);
         });
 
         // Get amount of products in feed (file line count - 2 for header and empty line at bottom)
-        $actualProductCount = File::lines($localFilePath)->count() - 2;
+        $actualProductCount = File::lines($this->filePath)->count() - 2;
 
         logger()->info($this->vendor . '.'. $this->store->code . ': Finished with file line count '.$actualProductCount.', should be ~'. $expectedProductCount .' products');
 
@@ -192,8 +196,8 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         }
 
         // Upload the file to S3
-        $this->uploadToS3($localFilePath);
-        $this->removeLocalFile($localFilePath);
+        $this->uploadToS3($this->filePath);
+        $this->removeLocalFile();
     }
 
     protected function getCountryCode()
@@ -242,7 +246,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     /**
      * @param string $source
      */
-    protected function uploadToS3(string $localFilePath)
+    protected function uploadToS3()
     {
         // Prepare path to file on S3
         $targetDirectory = $this->store->code.'/'.$this->vendor;
@@ -293,14 +297,14 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             [
                 'Bucket' => $this->feedsBucket,
                 'Key' => $targetPath,
-                'SourceFile' => $localFilePath,
+                'SourceFile' => $this->filePath,
                 'ACL' => 'public-read',
             ]
         );
     }
 
-    protected function removeLocalFile(string $localFilePath) {
-        File::delete($localFilePath);
+    protected function removeLocalFile() {
+        File::delete($this->filePath);
     }
 
     protected function formatFeedLine(array $fields) {
@@ -376,6 +380,8 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
      */
     public function failed($exception): void
     {
+        // TODO: uncomment line below
+//        $this->removeLocalFile();
         event(new FeedJobFailed($exception));
     }
 
@@ -483,12 +489,6 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         }
 
         return $path;
-    }
-
-    public function fail($exception = null)
-    {
-        // TODO: Calculate $localFilePath and uncomment line below
-//        $this->removeLocalFile($localFilePath);
     }
 
     public function uniqueId()
