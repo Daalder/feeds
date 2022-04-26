@@ -189,7 +189,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         // Get amount of products in feed (file line count - 2 for header and empty line at bottom)
         $actualProductCount = File::lines($this->filePath)->count() - 2;
 
-        logger()->info($this->vendor . '.'. $this->store->code . ': Finished with file line count '.$actualProductCount.', should be ~'. $expectedProductCount .' products');
+        logger()->info($this->vendor . '.'. $this->store->code . ': Finished with file line count '.$actualProductCount.', should be '. $expectedProductCount .' products');
 
         // If line count in feed is not right, don't proceed to upload to S3
         if($actualProductCount !== $expectedProductCount) {
