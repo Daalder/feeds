@@ -6,7 +6,9 @@ use Daalder\Feeds\Jobs\Feeds\Feed;
 use Daalder\Feeds\Jobs\Feeds\GoogleFeed;
 use Daalder\Feeds\Tests\TestCase as DaalderTestCase;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 use Pionect\Daalder\Models\Store\Store;
+use Symfony\Component\Finder\SplFileInfo;
 
 /**
  * Class FeedsTestBase
@@ -26,12 +28,31 @@ abstract class FeedsTestBase extends DaalderTestCase
             /** @var Feed $feedJob */
             $feedJob = new $feed($store);
             $feedJob::dispatchSync($store);
-            $this->localFeedFilePath = $feedJob->filePath;
         } catch(\InvalidArgumentException $e) {
             // AWS credentials aren't configured
         }
 
-        $this->assertFileExists($this->localFeedFilePath);
+        // The directory for this vendor should be created
+        $this->assertDirectoryExists(storage_path('feeds/'.$feedJob->vendor));
+
+        // Get the filePath for this vendor/feed combination (it's suffixed with a random string)
+        $filePath = $this->getFeedFilePath($feedJob->vendor, $store->code);
+
+        // Feed file should be created
+        $this->assertFileExists($filePath);
+    }
+
+    protected function getFeedFilePath(string $vendor, string $store) {
+        $vendorFiles = File::files(storage_path("feeds/$vendor"));
+
+        $vendorStoreFile = collect($vendorFiles)
+            ->filter(function(SplFileInfo $file) use ($store) {
+                return Str::contains($file->getFilename(), $store);
+            })
+            ->first()
+            ->getFileName();
+
+        return storage_path("feeds/$vendor/$vendorStoreFile");
     }
 
     protected function getProductsCountInFeedFile(string $filePath) {

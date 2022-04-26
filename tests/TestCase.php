@@ -104,4 +104,17 @@ class TestCase extends DaalderTestCase
 
 //        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
+
+    /**
+     * Teardown the test environment
+     */
+    protected function tearDown(): void
+    {
+        // Remove all feeds that were generated in the last test
+        if(File::exists(storage_path('feeds'))) {
+            File::deleteDirectory(storage_path('feeds'));
+        }
+
+        parent::tearDown();
+    }
 }
