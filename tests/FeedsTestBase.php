@@ -60,3 +60,4 @@ abstract class FeedsTestBase extends DaalderTestCase
         return File::lines($filePath)->count() - 2;
     }
 }
+
