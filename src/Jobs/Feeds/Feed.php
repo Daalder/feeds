@@ -106,6 +106,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             ->whereHas('stores', function (Builder $query) {
                 $query->where(Store::table().'.id', $this->store->id);
             })
+            ->has('prices')
             // that have an attributeset
             ->hasAttributeSet()
             // Include brand and attributeset relationships
