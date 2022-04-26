@@ -13,7 +13,7 @@ jobs:
                 os: [ubuntu-latest]
                 php: [7.4]
                 laravel: [8.*]
-                dependency-version: [prefer-stable]
+                dependency-version: [prefer-lowest, prefer-stable]
                 include:
                     -   laravel: 8.*
                         testbench: 6.*
@@ -21,7 +21,7 @@ jobs:
         name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
         steps:
             -   id: foo
-                uses: Daalder/run-tests-action@1.1.1
+                uses: Daalder/run-tests-action@6998c465884102662f94481e59038c5141a6a264
                 env:
                     GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
                     PACKAGIST_TOKEN: ${{ secrets.DAALDER }}
