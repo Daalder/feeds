@@ -2,6 +2,7 @@
 
 namespace Daalder\Feeds\Tests;
 
+use Daalder\Feeds\Jobs\Feeds\Feed;
 use Daalder\Feeds\Jobs\Feeds\GoogleFeed;
 use Daalder\Feeds\Tests\TestCase as DaalderTestCase;
 use Illuminate\Support\Facades\File;
@@ -15,21 +16,22 @@ abstract class FeedsTestBase extends DaalderTestCase
 {
     use CreatesTestProducts;
 
+    private $localFeedFilePath;
+
     public abstract function it_can_generate_feed();
 
     protected function generate_feed_basetest($feed, $store)
     {
         try {
+            /** @var Feed $feedJob */
             $feedJob = new $feed($store);
             $feedJob::dispatchSync($store);
+            $this->localFeedFilePath = $feedJob->filePath;
         } catch(\InvalidArgumentException $e) {
             // AWS credentials aren't configured
         }
 
-        $fileName = $store->code.'.'.$feedJob->type;
-        $localFilePath = storage_path().'/feeds/'.$feedJob->vendor.'/'.$fileName;
-
-        $this->assertFileExists($localFilePath);
+        $this->assertFileExists($this->localFeedFilePath);
     }
 
     protected function getProductsCountInFeedFile(string $filePath) {

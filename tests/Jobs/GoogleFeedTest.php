@@ -37,10 +37,7 @@ class GoogleFeedTest extends FeedsTestBase
             // AWS credentials aren't configured
         }
 
-        $fileName = $store->code.'.'.$feedJob->type;
-        $localFilePath = storage_path().'/feeds/'.$feedJob->vendor.'/'.$fileName;
-
         // There are 10 products, 8 of which should be in the feed (plus one row for header and one for an empty line at the bottom)
-        $this->assertEquals($this->validTestProducts, $this->getProductsCountInFeedFile($localFilePath));
+        $this->assertEquals($this->validTestProducts, $this->getProductsCountInFeedFile($feedJob->filePath));
     }
 }
