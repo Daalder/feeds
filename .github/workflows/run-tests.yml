@@ -23,6 +23,6 @@ jobs:
             -   id: foo
                 uses: Daalder/run-tests-action@1.2.0
                 env:
-                    GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+                    GITHUB_TOKEN: ${{ github.token }}
                     PACKAGIST_TOKEN: ${{ secrets.DAALDER }}
                     SLACK_BEARER_TOKEN: ${{ secrets.SLACK_BEARER_TOKEN }}
