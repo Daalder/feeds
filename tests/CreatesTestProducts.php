@@ -67,14 +67,12 @@ trait CreatesTestProducts {
     }
 
     protected function createAdmarktTestProducts() {
-        $includeInNetrivalsFeedProperty = $this->createFeedAttributeProperty('include-in-google-feed', 'Include in Google Feed');
-
         // Two products without images
         Product::factory()->count(2)->create();
 
         // Ten products with images
         /** @var Collection $products */
-        $products = Product::factory()->count(12)
+        $products = Product::factory()->count(10)
             ->hasImages(Media::factory()->create())
             ->create();
 
@@ -83,17 +81,6 @@ trait CreatesTestProducts {
         $deliveryBlockedProducts->each->update([
             'delivery' => 55,
         ]);
-
-        // Set the include-in-google-feed property to 1 for all products
-        foreach($products as $product) {
-            app(ProductRepository::class)->setPropertyValue($product, $includeInGoogleFeedProperty->id, 1);
-        }
-
-        // Two of those ten products have a value of 0 for the include-in-google-feed property (not those already blocked by delivery)
-        $dontIncludeProducts = $products->whereNotIn('sku', $deliveryBlockedProducts->pluck('sku'))->random(2);
-        foreach($dontIncludeProducts as $product) {
-            app(ProductRepository::class)->setPropertyValue($product, $includeInGoogleFeedProperty->id, 0);
-        }
 
         $this->validTestProducts = 8;
     }
