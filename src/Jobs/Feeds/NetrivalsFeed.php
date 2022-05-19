@@ -45,12 +45,12 @@ class NetrivalsFeed extends Feed
             ->with('vatRates', 'stock')
             ->whereNull('deleted_at')
             ->whereNotNull('ean')
-            ->whereHas('productproperties', function($query) {
+            ->whereHas('productproperties', function ($query) {
                 $query
                     ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
-                    ->where('code', 'netrivals-prijsvergelijk')
+                    ->where('code', 'include-in-netrivals-feed')
                     ->where('value', '1');
-            });
+            });;
     }
 
     protected function productToFeedRow(Product $product)

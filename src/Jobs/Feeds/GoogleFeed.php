@@ -50,7 +50,13 @@ class GoogleFeed extends Feed
 
         return $query
             ->whereNotIn('productattributeset_id', $this->excludedGoogleAttributeSets)
-            ->whereNull('deleted_at');
+            ->whereNull('deleted_at')
+            ->whereHas('productproperties', function ($query) {
+                $query
+                    ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
+                    ->where('code', 'include-in-google-feed')
+                    ->where('value', '1');
+            });;
     }
 
     protected function productToFeedRow(Product $product)

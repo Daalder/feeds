@@ -22,6 +22,7 @@ class FeedsServiceProvider extends ServiceProvider
         parent::boot();
 
         $this->loadViewsFrom( __DIR__ . '/../' . 'resources/views', 'daalder-feeds');
+        $this->loadMigrationsFrom(__DIR__ . '/../' . 'database/migrations', 'daalder-feeds');
 
         $this->publishes([
             __DIR__.'/../config/daalder-feeds.php' => config_path('daalder-feeds.php'),
