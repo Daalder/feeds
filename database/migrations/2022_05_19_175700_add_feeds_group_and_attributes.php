@@ -36,7 +36,7 @@ return new class extends Migration {
         $includeNetrivalsFeed = ProductAttribute::updateOrCreate(['code' => 'include-in-netrivals-feed'], [
             'productattributegroup_id' => $group->id,
             'inputtype' => 'boolean',
-            'is_global' => 1,
+            'is_global' => 0,
         ]);
 
         // Set default values foreach possible translation
