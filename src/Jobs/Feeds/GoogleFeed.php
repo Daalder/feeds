@@ -56,7 +56,7 @@ class GoogleFeed extends Feed
                     ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
                     ->where('code', 'include-in-google-feed')
                     ->where('value', '1');
-            });;
+            });
     }
 
     protected function productToFeedRow(Product $product)
@@ -115,12 +115,14 @@ class GoogleFeed extends Feed
             }
         }
 
-        $property = $product->productproperties()->whereHas('productattribute', function (Builder $query) {
-            $query->where('code', 'gaatuitvoorraad');
-        })->first();
+        /** Nubuiten spesific, should use event */
+        $willGoOutOfStockProperty = $product->productproperties()->whereHas('productattribute',
+            function (Builder $query) {
+                $query->where('code', 'gaatuitvoorraad');
+            })->first();
 
-        if ($property) {
-            $fields['custom_label_2'] = $property->pivot->value;
+        if ($willGoOutOfStockProperty) {
+            $fields['custom_label_2'] = $willGoOutOfStockProperty->pivot->value;
         } else {
             $fields['custom_label_2'] = 0;
         }
@@ -130,6 +132,23 @@ class GoogleFeed extends Feed
             if (optional($priceObject)->list_price != optional($priceObject)->price) {
                 $fields['price'] = $this->getFormattedListPrice($product);
                 $fields['sale_price'] = $this->getFormattedPrice($product);
+            }
+        }
+
+        /** Nubuiten spesific, should use event */
+        $minimumOrderValueProperty = $product->productproperties()
+            ->whereHas('productattribute', function (Builder $query) {
+                $query->where('code', 'minimaleafname');
+            })->first();
+
+        if ($minimumOrderValueProperty && $minimumOrderValueProperty->pivot->value) {
+            $newPrice = optional(optional($product->getCurrentPrice())->priceAsMoney())->multiply($minimumOrderValueProperty->pivot->value);
+            if (!$fields['sale_price']) {
+                $fields['price'] = $this->formatPrice($product, $newPrice);
+            } else {
+                $newListPrice = optional(optional($product->getCurrentListPrice())->listPriceAsMoney())->multiply($minimumOrderValueProperty->pivot->value);
+                $fields['price'] = $this->formatPrice($product, $newListPrice);
+                $fields['sale_price'] = $this->formatPrice($product, $newPrice);
             }
         }
 
@@ -143,6 +162,8 @@ class GoogleFeed extends Feed
         if (!is_null($image)) {
             $fields['image_link'] = $image->src;
         }
+
+        dd($fields);
 
         return $fields;
     }
