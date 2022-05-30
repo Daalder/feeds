@@ -163,8 +163,6 @@ class GoogleFeed extends Feed
             $fields['image_link'] = $image->src;
         }
 
-        dd($fields);
-
         return $fields;
     }
 
