@@ -69,7 +69,7 @@ return new class extends Migration {
 
         // Get the global ProductProperty belonging to the new ProductAttribute
         $property = ProductProperty::query()->globals()->firstWhere('productattribute_id', $attribute->id);
-        $productIdsChunks = Product::query()->pluck('id')->chunk(500);
+        $productIdsChunks = Product::query()->pluck('id')->chunk(100);
 
         // Chunk through the product ids
         foreach ($productIdsChunks as $productIdsChunk) {
