@@ -98,7 +98,8 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     /**
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    protected function getProductQuery() {
+    protected function getProductQuery()
+    {
         return $this->productRepository->newQuery()
             // that have products
             ->has('images')
@@ -113,7 +114,8 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             ->with(['brand', 'productattributeset']);
     }
 
-    private function generate() {
+    private function generate()
+    {
         // Create storage/feeds directory if it doesn't exist
         if (!File::exists(storage_path('feeds'))) {
             File::makeDirectory(storage_path('feeds'));
@@ -148,25 +150,25 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         event($event);
         $query = $event->getProductsQuery();
 
-        if(!$query) {
+        if (!$query) {
             return;
         }
 
         $expectedProductCount = $query->count();
 
         // Chunk-process the products
-        $query->chunkById($this->chunkSize, function($products) {
+        $query->chunkById($this->chunkSize, function ($products) {
             // Map the validProducts into feed rows
             $feedLines = $products
-                ->map(function($product) {
+                ->map(function ($product) {
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
                         $feedRow = $this->productToFeedRow($product);
 
                         // Overwrite preconfigured fields for this vendor
                         $fieldOverwrites = config('daalder-feeds.field-overwrites.'.$this->vendor);
-                        if($fieldOverwrites) {
-                            foreach($fieldOverwrites as $field => $value) {
+                        if ($fieldOverwrites) {
+                            foreach ($fieldOverwrites as $field => $value) {
                                 $feedRow[$field] = $value;
                             }
                         }
@@ -175,7 +177,8 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                         return $this->formatFeedLine($feedRow);
                     } catch (\Exception $ex) {
                         // Log exception and return an empty string
-                        logger()->error($this->vendor . '.'. $this->store->code . ": Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
+                        logger()->error($this->vendor.'.'.$this->store->code.": Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
+
                         return '';
                     }
                 })
@@ -189,11 +192,11 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         // Get amount of products in feed (file line count - 2 for header and empty line at bottom)
         $actualProductCount = File::lines($this->filePath)->count() - 2;
 
-        logger()->info($this->vendor . '.'. $this->store->code . ': Finished with file line count '.$actualProductCount.', should be '. $expectedProductCount .' products');
+        logger()->info($this->vendor.'.'.$this->store->code.': Finished with file line count '.$actualProductCount.', should be '.$expectedProductCount.' products');
 
         // If line count in feed is not right, don't proceed to upload to S3
-        if($actualProductCount !== $expectedProductCount) {
-            throw new \Error($this->vendor . '.'. $this->store->code . ': Feed should contain ' . $expectedProductCount . ' products, but instead contains ' . $actualProductCount . ' products. Cancelling upload.');
+        if ($actualProductCount !== $expectedProductCount) {
+            throw new \Error($this->vendor.'.'.$this->store->code.': Feed should contain '.$expectedProductCount.' products, but instead contains '.$actualProductCount.' products. Cancelling upload.');
         }
 
         // Upload the file to S3
@@ -215,44 +218,36 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     {
         $price = $product->getCurrentPrice();
 
-        if(!$price || !$price->priceAsMoney()) {
-            return '';
-        }
-
-        $currency = $this->getCurrency($product);
-        $priceAsMoney = $price->priceAsMoney();
-
-        return MoneyFactory::toString($priceAsMoney) . ' ' . $currency;
+        return $this->formatPrice($product, optional($price)->priceAsMoney());
     }
 
     protected function getFormattedListPrice(Product $product)
     {
         $price = $product->getCurrentListPrice();
 
-        if (!$price || !$price->listPriceAsMoney()) {
-            return '';
-        }
+        return $this->formatPrice($product, optional($price)->listPriceAsMoney());
+    }
 
-        // TODO: This is a temporary fix for daalder ~13.15.5
-        if ($price->list_price === $price->price) {
+    protected function formatPrice(Product $product, $price = null)
+    {
+        if (!$price) {
             return '';
         }
 
         $currency = $this->getCurrency($product);
-        $listPriceAsMoney = $price->listPriceAsMoney();
 
-        return MoneyFactory::toString($listPriceAsMoney) . ' ' . $currency;
+        return MoneyFactory::toString($price).' '.$currency;
     }
 
     /**
-     * @param string $source
+     * @param  string  $source
      */
     protected function uploadToS3()
     {
         // Prepare path to file on S3
         $targetDirectory = $this->store->code.'/'.$this->vendor;
         $targetFileName = $this->vendor.'.'.$this->type;
-        $targetPath = $targetDirectory .'/'. $targetFileName;
+        $targetPath = $targetDirectory.'/'.$targetFileName;
 
         $currentFeed = null;
 
@@ -262,16 +257,17 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                 "Bucket" => $this->feedsBucket,
                 "Key" => $targetPath,
             ]);
-        } catch(\Exception $e) {}
+        } catch (\Exception $e) {
+        }
 
         // If the currently active feed file was found
-        if($currentFeed) {
+        if ($currentFeed) {
             // Get the formatted date for when the currently active feed file was last modified and prepare a new filename using it
             $lastModifiedDate = $currentFeed->get('LastModified');
             $lastModifiedDate = Carbon::createFromTimestamp($lastModifiedDate->getTimestamp());
 
             // If currently active feed was not created today, back it up.
-            if($lastModifiedDate->ne(today())) {
+            if ($lastModifiedDate->ne(today())) {
                 $newNameForOldFeed = $this->vendor.'_'.$lastModifiedDate->toDateString().'.'.$this->type;
 
                 try {
@@ -281,7 +277,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                         'Bucket' => $this->feedsBucket,
                         "Key" => $targetDirectory.'/'.$newNameForOldFeed,
                     ]);
-                } catch(\Exception $e) {
+                } catch (\Exception $e) {
                     // Copy the currently active feed file to {vendor}_{datestring}.{extension} as a backup
                     $currentFeed = $this->s3Client->copyObject([
                         'Bucket' => $this->feedsBucket,
@@ -304,12 +300,14 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         );
     }
 
-    protected function removeLocalFile() {
+    protected function removeLocalFile()
+    {
         File::delete($this->filePath);
     }
 
-    protected function formatFeedLine(array $fields) {
-        switch($this->type) {
+    protected function formatFeedLine(array $fields)
+    {
+        switch ($this->type) {
             case 'txt':
                 return $this->convertToTxtLine($fields);
                 break;
@@ -464,6 +462,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     protected function getImageLink(Product $product)
     {
         $image = $product->images()->first();
+
         return optional($image)->src;
     }
 
