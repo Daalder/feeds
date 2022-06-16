@@ -5,6 +5,9 @@ namespace Daalder\Feeds\Jobs\Feeds;
 use Aws\S3\S3Client;
 use Aws\S3\S3ClientInterface;
 use Daalder\Feeds\Events\AfterCreatingFeedProductQuery;
+use Daalder\Feeds\Events\AfterCreatingFeedRow;
+use Daalder\Feeds\Events\BeforeCreatingRowHeader;
+use Daalder\Feeds\Services\FeedPriceFormatter;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -70,6 +73,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     public function __construct(Store $store)
     {
         $this->store = $store;
+        $this->priceFormatter = new FeedPriceFormatter($this->store);
         $this->feedsBucket = config('daalder-feeds.bucket');
 
         $this->onQueue('medium');
@@ -138,6 +142,11 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
         // UTF-8 BOM and header (column names)
         $feedHeader = chr(0xEF).chr(0xBB).chr(0xBF);
+        // Before Creating Header Event
+        $beforeCreatingRowHeaderEvent = new BeforeCreatingRowHeader($this->vendor, $this->store, $this->fieldNames);
+        event($beforeCreatingRowHeaderEvent);
+
+        $this->fieldNames = $beforeCreatingRowHeaderEvent->getFieldNames();
         $feedHeader .= $this->formatFeedLine($this->fieldNames);
 
         // Write the header (first row) of the feed
@@ -164,6 +173,9 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
                         $feedRow = $this->productToFeedRow($product);
+                        $afterCreatingFeedRowEvent = new AfterCreatingFeedRow($this->vendor, $this->store, $feedRow, $product);
+                        event($afterCreatingFeedRowEvent);
+                        $feedRow = $afterCreatingFeedRowEvent->getFeedRow();
 
                         // Overwrite preconfigured fields for this vendor
                         $fieldOverwrites = config('daalder-feeds.field-overwrites.'.$this->vendor);
@@ -202,41 +214,6 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         // Upload the file to S3
         $this->uploadToS3($this->filePath);
         $this->removeLocalFile();
-    }
-
-    protected function getCountryCode()
-    {
-        return Str::upper(Str::after($this->store->defaultlanguage, '_'));
-    }
-
-    protected function getCurrency(Product $product)
-    {
-        return optional(optional($product->getCurrentPrice())->currency)->code ?? $this->store->currency_code;
-    }
-
-    protected function getFormattedPrice(Product $product)
-    {
-        $price = $product->getCurrentPrice();
-
-        return $this->formatPrice($product, optional($price)->priceAsMoney());
-    }
-
-    protected function getFormattedListPrice(Product $product)
-    {
-        $price = $product->getCurrentListPrice();
-
-        return $this->formatPrice($product, optional($price)->listPriceAsMoney());
-    }
-
-    protected function formatPrice(Product $product, $price = null)
-    {
-        if (!$price) {
-            return '';
-        }
-
-        $currency = $this->getCurrency($product);
-
-        return MoneyFactory::toString($price).' '.$currency;
     }
 
     /**
