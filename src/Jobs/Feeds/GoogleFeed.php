@@ -132,9 +132,11 @@ class GoogleFeed extends Feed
         }
         
         $googleProductCategoryProperty = $product->getProperty('google-product-category');
-        $googleProductCode =  optional(Option::find($googleProductCategoryProperty->pivot->value))->code;
-        $fields['google_product_category'] = $googleProductCode ?: '';
-        
+        if($googleProductCategoryProperty) {
+            $googleProductCode =  optional(Option::find($googleProductCategoryProperty->pivot->value))->code;
+            $fields['google_product_category'] = $googleProductCode ?: '';
+        }
+
         if (!is_null($product->brand)) {
             $fields['brand'] = $product->brand->name;
         }
