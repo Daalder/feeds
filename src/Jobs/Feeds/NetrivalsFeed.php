@@ -63,7 +63,7 @@ class NetrivalsFeed extends Feed
         $fields = [
             'product_id' => $product->id,
             'title' => $product->name,
-            'price' => $this->getFormattedPrice($product),
+            'price' => $this->priceFormatter->getFormattedPrice($product),
             'image_url' => optional($product->images()->first())->src,
             'product_type' => ($product->group_id !== null) ? $product->group->name : '(not set)',
             'brand' => optional($product->brand)->name,

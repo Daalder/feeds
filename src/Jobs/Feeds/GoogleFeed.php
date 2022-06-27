@@ -25,6 +25,7 @@ class GoogleFeed extends Feed
         'image_link',
         'price',
         'sale_price',
+        'cost_of_goods_sold',
         'currency',
         'availability',
         'shipping',
@@ -62,8 +63,8 @@ class GoogleFeed extends Feed
     protected function productToFeedRow(Product $product)
     {
         $priceObject = $product->getCurrentPrice();
-        $currency = $this->getCurrency($product);
-        $countryCode = $this->getCountryCode();
+        $currency = $this->priceFormatter->getCurrency($product);
+        $countryCode = $this->priceFormatter->getCountryCode();
 
         $shipping = '';
         /** @var ShippingMethod $rate */
@@ -86,8 +87,9 @@ class GoogleFeed extends Feed
             'description' => $product->description,
             'link' => $this->getHost().'/'.$product->url,
             'image_link' => '', //Filled below
-            'price' => $this->getFormattedPrice($product),
-            'sale_price' => '', //Filled below
+            'price' => $this->priceFormatter->getFormattedPrice($product),
+            'sale_price' => '', //Filled below,
+            'cost_of_goods_sold' => $product->cost_price ? $product->cost_price.' '.$currency : '',
             'currency' => $currency,
             'availability' => ($product->is_for_sale == 1) ? 'in_stock' : 'out_of_stock',
             'shipping' => $shipping,
@@ -115,40 +117,12 @@ class GoogleFeed extends Feed
             }
         }
 
-        /** Nubuiten spesific, should use event */
-        $willGoOutOfStockProperty = $product->productproperties()->whereHas('productattribute',
-            function (Builder $query) {
-                $query->where('code', 'gaatuitvoorraad');
-            })->first();
-
-        if ($willGoOutOfStockProperty) {
-            $fields['custom_label_2'] = $willGoOutOfStockProperty->pivot->value;
-        } else {
-            $fields['custom_label_2'] = 0;
-        }
 
         if (optional($priceObject)->list_price && optional($priceObject)->list_price != 0) {
             // TODO: remove temporary fix for daalder ~13.15.5
             if (optional($priceObject)->list_price != optional($priceObject)->price) {
-                $fields['price'] = $this->getFormattedListPrice($product);
-                $fields['sale_price'] = $this->getFormattedPrice($product);
-            }
-        }
-
-        /** Nubuiten spesific, should use event */
-        $minimumOrderValueProperty = $product->productproperties()
-            ->whereHas('productattribute', function (Builder $query) {
-                $query->where('code', 'minimaleafname');
-            })->first();
-
-        if ($minimumOrderValueProperty && $minimumOrderValueProperty->pivot->value) {
-            $newPrice = optional(optional($product->getCurrentPrice())->priceAsMoney())->multiply($minimumOrderValueProperty->pivot->value);
-            if (!$fields['sale_price']) {
-                $fields['price'] = $this->formatPrice($product, $newPrice);
-            } else {
-                $newListPrice = optional(optional($product->getCurrentListPrice())->listPriceAsMoney())->multiply($minimumOrderValueProperty->pivot->value);
-                $fields['price'] = $this->formatPrice($product, $newListPrice);
-                $fields['sale_price'] = $this->formatPrice($product, $newPrice);
+                $fields['price'] = $this->priceFormatter->getFormattedListPrice($product);
+                $fields['sale_price'] = $this->priceFormatter->getFormattedPrice($product);
             }
         }
 
