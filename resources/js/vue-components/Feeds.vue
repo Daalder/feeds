@@ -3,7 +3,7 @@
         <div class="flex justify-center flex-col items-center">
             <button type="button" @click="generateFeeds()"
                     class="cursor-pointer rounded-lg outline-none focus:outline-none uppercase bg-blue-700 text-white py-2 px-4 text-center hover:bg-blue-400 flex items-center justify-center">
-                <span class="material-icons mr-2" :class="{'animate-spin': isLoading}">{{ isLoading ? 'hourglass_empty' : 'cloud_sync' }}</span> Regenerate Feeds
+                <span class="material-icons mr-2" :class="{'animate-spin': isLoading}">{{ isLoading ? 'autorenew' : 'cloud_sync' }}</span> Regenerate Feeds
             </button>
             <div class="h-10">
                 <p v-if="successMessage" class="text-green-800 uppercase">{{successMessage}}</p>
