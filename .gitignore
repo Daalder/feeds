@@ -4,3 +4,7 @@ composer.lock
 .DS_Store
 phpunit.xml
 .phpunit.result.cache
+
+node_modules
+
+mix-manifest.json

@@ -217,7 +217,7 @@ var render = function() {
               staticClass: "material-icons mr-2",
               class: { "animate-spin": _vm.isLoading }
             },
-            [_vm._v(_vm._s(_vm.isLoading ? "hourglass_empty" : "cloud_sync"))]
+            [_vm._v(_vm._s(_vm.isLoading ? "autorenew" : "cloud_sync"))]
           ),
           _vm._v(" Regenerate Feeds\n        ")
         ]
