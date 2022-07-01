@@ -13,5 +13,3 @@ mix.sass('./resources/scss/styles.scss', 'public/css/feeds-package-styles.css')
     });
 
 
-// copy backoffice assets to public
-mix.copyDirectory('./public', '../../../public');

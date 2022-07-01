@@ -5,10 +5,10 @@ namespace Daalder\Feeds;
 use Daalder\Feeds\Commands\GenerateFeedsCommand;
 use Daalder\Feeds\Commands\PurgeOldExportFeedsCommand;
 use Daalder\Feeds\ServiceProviders\EventServiceProvider;
+use Daalder\Feeds\ServiceProviders\FeedsRouteServiceProvider;
 use Daalder\Feeds\Services\VariationChecker;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Support\Collection;
-use Pionect\Daalder\BackofficeServiceProvider;
 use Pionect\Daalder\Hooks\Facades\Hook;
 use Pionect\Daalder\Menus\Item;
 
@@ -28,9 +28,7 @@ class FeedsServiceProvider extends ServiceProvider
 
         $this->loadViewsFrom( __DIR__ . '/../' . 'resources/views', 'daalder-feeds');
         $this->loadMigrationsFrom(__DIR__ . '/../' . 'database/migrations', 'daalder-feeds');
-        if(class_exists(BackofficeServiceProvider::class)) {
-            $this->loadRoutesFrom(__DIR__ . '/../routes/feeds.php');
-        }
+
 
         $this->publishes([
             __DIR__.'/../config/daalder-feeds.php' => config_path('daalder-feeds.php'),
@@ -60,5 +58,6 @@ class FeedsServiceProvider extends ServiceProvider
 
         $this->app->register(EventServiceProvider::class);
         $this->app->singleton(VariationChecker::class);
+        $this->app->register(FeedsRouteServiceProvider::class);
     }
 }
