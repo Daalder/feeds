@@ -64,8 +64,8 @@ class FacebookFeed extends Feed
     protected function productToFeedRow(Product $product) {
 
         $priceObject = $product->getCurrentPrice();
-        $currency = optional(optional($priceObject)->currency)->code ?? $this->getCurrency($product);
-        $countryCode = $this->getCountryCode();
+        $currency = optional(optional($priceObject)->currency)->code ?? $this->priceFormatter->getCurrency($product);
+        $countryCode = $this->priceFormatter->getCountryCode();
 
         $shipping = '';
         /** @var ShippingMethod $rate */
@@ -96,7 +96,7 @@ class FacebookFeed extends Feed
             'description' => $product->description,
             'link' => $this->getHost().'/'.$product->url,
             'image_link' => $this->getImageLink($product),
-            'price' => $this->getFormattedPrice($product),
+            'price' => $this->priceFormatter->getFormattedPrice($product),
             'sale_price' => '', //Filled below,
             'availability' => 'in stock',
             'shipping' => $shipping,
@@ -117,8 +117,8 @@ class FacebookFeed extends Feed
         if (optional($priceObject)->list_price && optional($priceObject)->list_price != 0) {
             // Temporary check for daalder ~13.5.5
             if(optional($priceObject)->list_price != optional($priceObject)->price) {
-                $fields['price'] = $this->getFormattedListPrice($product);
-                $fields['sale_price'] = $this->getFormattedPrice($product);
+                $fields['price'] = $this->priceFormatter->getFormattedListPrice($product);
+                $fields['sale_price'] = $this->priceFormatter->getFormattedPrice($product);
             }
         }
 

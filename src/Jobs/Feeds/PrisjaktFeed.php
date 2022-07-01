@@ -37,8 +37,8 @@ class PrisjaktFeed extends Feed
 
     protected function productToFeedRow(Product $product) {
         $host = $this->getHost();
-        $currency = $this->getCurrency($product);
-        $countryCode = $this->getCountryCode();
+        $currency = $this->priceFormatter->getCurrency($product);
+        $countryCode = $this->priceFormatter->getCountryCode();
 
         $shipping = '';
         /** @var ShippingMethod $rate */

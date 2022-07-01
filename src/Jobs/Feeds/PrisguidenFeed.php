@@ -39,8 +39,8 @@ class PrisguidenFeed extends Feed
         $host = $this->getHost();
 
         $priceObject = $product->getCurrentPrice();
-        $currency = optional(optional($priceObject)->currency)->code ?? $this->getCurrency($product);
-        $countryCode = $this->getCountryCode();
+        $currency = optional(optional($priceObject)->currency)->code ?? $this->priceFormatter->getCurrency($product);
+        $countryCode = $this->priceFormatter->getCountryCode();
 
         $shipping = '';
         /** @var ShippingMethod $rate */
@@ -59,7 +59,7 @@ class PrisguidenFeed extends Feed
 
         $fields = [
             'name' => $product->name,
-            'price' => $this->getFormattedPrice($product),
+            'price' => $this->priceFormatter->getFormattedPrice($product),
             'url' => $host.'/'.$product->url,
             'image_url' => $this->getImageLink($product),
             'id' => $product->id,

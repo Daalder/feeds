@@ -3,8 +3,6 @@
 namespace Daalder\Feeds\Events;
 
 use Illuminate\Database\Eloquent\Builder;
-use Pionect\Daalder\Models\Basket\BasketEntry;
-use Pionect\Daalder\Models\Price\Price;
 
 class AfterCreatingFeedProductQuery
 {
@@ -14,10 +12,7 @@ class AfterCreatingFeedProductQuery
     /** @var Builder $productsQuery */
     private $productsQuery;
 
-    /**
-     * @param  BasketEntry  $basketEntry
-     * @param  Price  $price
-     */
+    
     public function __construct(string $feedClass, Builder $productsQuery)
     {
         $this->feedClass = $feedClass;
