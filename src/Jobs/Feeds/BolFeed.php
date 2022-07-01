@@ -26,22 +26,24 @@ class BolFeed extends Feed
         'Commissie',
     ];
 
-    protected function getProductQuery() {
+    /**@var array */
+    public $supplierRates = [
+        'KBT' => 9.5,
+        'Westwood' => 8.5,
+        'Woodvision' => 8.5,
+        'Wienerberger' => 8.5,
+    ];
+
+    protected function getProductQuery()
+    {
         $query = parent::getProductQuery();
 
-        $supplierRates = [
-            'KBT' => 9.5,
-            'Westwood' => 8.5,
-            'Woodvision' => 8.5,
-            'Wienerberger' => 8.5,
-        ];
-
         $supplierQuery = Supplier::select('id', 'name');
-        foreach ($supplierRates as $supplier => $rate) {
-            $supplierQuery->orWhere('name', 'LIKE', '%'.$supplier.'%');
+        foreach ($this->supplierRates as $supplier => $rate) {
+            $supplierQuery->orWhere('name', 'LIKE', '%' . $supplier . '%');
         }
         $suppliers = $supplierQuery->get();
-        
+
         $brands = [];
         foreach ($suppliers as $supplier) {
             $brands = array_merge($brands, $supplier->brands->pluck('id')->all());

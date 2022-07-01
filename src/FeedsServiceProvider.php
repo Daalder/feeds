@@ -5,6 +5,7 @@ namespace Daalder\Feeds;
 use Daalder\Feeds\Commands\GenerateFeedsCommand;
 use Daalder\Feeds\Commands\PurgeOldExportFeedsCommand;
 use Daalder\Feeds\ServiceProviders\EventServiceProvider;
+use Daalder\Feeds\Services\VariationChecker;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 
 /**
@@ -43,5 +44,6 @@ class FeedsServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/daalder-feeds.php', 'daalder-feeds');
 
         $this->app->register(EventServiceProvider::class);
+        $this->app->singleton(VariationChecker::class);
     }
 }

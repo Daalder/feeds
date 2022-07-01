@@ -2,8 +2,10 @@
 
 namespace Daalder\Feeds\Jobs\Feeds;
 
+use Daalder\Feeds\Services\VariationChecker;
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
+use Pionect\Daalder\Models\ProductAttribute\Option;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
 use Pionect\Daalder\Models\Shipping\ShippingMethod;
 use Pionect\Daalder\Services\MoneyFactory;
@@ -33,7 +35,8 @@ class GoogleFeed extends Feed
         'expiration_date',
         'condition',
         'product_type',
-//        'google_product_category',
+        'google_product_category',
+        'item_group_id',
         'payment_accepted',
         'gtin',
         'brand',
@@ -65,6 +68,8 @@ class GoogleFeed extends Feed
         $priceObject = $product->getCurrentPrice();
         $currency = $this->priceFormatter->getCurrency($product);
         $countryCode = $this->priceFormatter->getCountryCode();
+        /**@var VariationChecker $variationChecker */
+        $variationChecker = app(VariationChecker::class);
 
         $shipping = '';
         /** @var ShippingMethod $rate */
@@ -97,7 +102,8 @@ class GoogleFeed extends Feed
             'expiration_date' => now()->addWeeks(2)->toDateString(),
             'condition' => 'new',
             'product_type' => ($product->group_id !== null) ? $product->group->name : '(not set)',
-//            'google_product_category' => $product->productattributeset ? $product->productattributeset->name : null,
+            'google_product_category' => '',
+            'item_group_id' => $variationChecker->getVariationGroupString($product),
             'payment_accepted' => 'IDEAL,Paypal,BanContact Mister Cash,Bankoverschrijving',
             'gtin' => $product->ean,
             'brand' => '', //Filled below
@@ -117,13 +123,18 @@ class GoogleFeed extends Feed
             }
         }
 
-
         if (optional($priceObject)->list_price && optional($priceObject)->list_price != 0) {
             // TODO: remove temporary fix for daalder ~13.15.5
             if (optional($priceObject)->list_price != optional($priceObject)->price) {
                 $fields['price'] = $this->priceFormatter->getFormattedListPrice($product);
                 $fields['sale_price'] = $this->priceFormatter->getFormattedPrice($product);
             }
+        }
+        
+        $googleProductCategoryProperty = $product->getProperty('google-product-category');
+        if($googleProductCategoryProperty) {
+            $googleProductCode =  optional(Option::find($googleProductCategoryProperty->pivot->value))->code;
+            $fields['google_product_category'] = $googleProductCode ?: '';
         }
 
         if (!is_null($product->brand)) {
