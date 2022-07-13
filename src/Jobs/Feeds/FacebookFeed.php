@@ -3,7 +3,9 @@
 namespace App\Jobs\Feeds;
 
 namespace Daalder\Feeds\Jobs\Feeds;
+
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
 use Pionect\Daalder\Models\Shipping\ShippingMethod;
@@ -28,6 +30,7 @@ class FacebookFeed extends Feed
         'description',
         'link',
         'image_link',
+        'additional_image_link',
         'price',
         'sale_price',
         'availability',
@@ -46,7 +49,8 @@ class FacebookFeed extends Feed
         'custom_label_4',
     ];
 
-    protected function getProductQuery() {
+    protected function getProductQuery()
+    {
         $query = parent::getProductQuery();
 
         return $query
@@ -55,13 +59,14 @@ class FacebookFeed extends Feed
             ->whereNull('deleted_at')
             ->whereHas('productproperties', function ($query) {
                 $query
-                    ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
+                    ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table() . '.id')
                     ->where('code', 'include-in-facebook-feed')
                     ->where('value', '1');
-            });;
+            });
     }
 
-    protected function productToFeedRow(Product $product) {
+    protected function productToFeedRow(Product $product)
+    {
 
         $priceObject = $product->getCurrentPrice();
         $currency = optional(optional($priceObject)->currency)->code ?? $this->priceFormatter->getCurrency($product);
@@ -79,7 +84,7 @@ class FacebookFeed extends Feed
             $shipping = "{$countryCode}:";
             $shipping .= ':';
             $shipping .= ':';
-            $shipping .= MoneyFactory::toString($rate->price).' '.$currency;
+            $shipping .= MoneyFactory::toString($rate->price) . ' ' . $currency;
         }
 
         $shippingTime = null;
@@ -90,12 +95,16 @@ class FacebookFeed extends Feed
             }
         }
 
+        $eligibleImages = $this->getFacebookFeedImageLinks($product);
+
+
         $fields = [
             'id' => $product->sku,
             'title' => $product->name,
             'description' => $product->description,
-            'link' => $this->getHost().'/'.$product->url,
-            'image_link' => $this->getImageLink($product),
+            'link' => $this->getHost() . '/' . $product->url,
+            'image_link' => Arr::get($eligibleImages, 'mainImage'),
+            'additional_image_link' =>  Arr::get($eligibleImages, 'additionalImages'),
             'price' => $this->priceFormatter->getFormattedPrice($product),
             'sale_price' => '', //Filled below,
             'availability' => 'in stock',
@@ -116,12 +125,40 @@ class FacebookFeed extends Feed
 
         if (optional($priceObject)->list_price && optional($priceObject)->list_price != 0) {
             // Temporary check for daalder ~13.5.5
-            if(optional($priceObject)->list_price != optional($priceObject)->price) {
+            if (optional($priceObject)->list_price != optional($priceObject)->price) {
                 $fields['price'] = $this->priceFormatter->getFormattedListPrice($product);
                 $fields['sale_price'] = $this->priceFormatter->getFormattedPrice($product);
             }
         }
 
         return $fields;
+    }
+
+    /**
+     * @param Product $product
+     * @return string[]
+     */
+    public function getFacebookFeedImageLinks(Product $product): array
+    {
+        $eligibleImages = $product->images->filter(function ($image) {
+            return $image->metadata->width > 500 && $image->metadata->height > 500;
+        });
+
+        $imageArray = [
+            'additionalImages' => ''
+        ];
+
+        if (!empty($eligibleImages)) {
+            $eligibleImagesSrc = $eligibleImages->pluck('src');
+            $imageArray['mainImage'] = $eligibleImagesSrc->shift();
+
+            if (!empty($eligibleImagesSrc)) {
+                $imageArray['additionalImages'] = $eligibleImagesSrc->join(',');
+            }
+        } else {
+            $imageArray['mainImage'] = $this->getImageLink($product);
+        }
+
+        return $imageArray;
     }
 }
