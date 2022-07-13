@@ -1,0 +1,32 @@
+{
+  "name": "feeds",
+  "version": "1.0.0",
+  "description": "Daalder package for generating Product feeds (Google, Netrivals, and more)",
+  "main": "webpack.mix.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "npm run development",
+    "development": "mix",
+    "watch": "mix watch",
+    "watch-poll": "mix watch -- --watch-options-poll=1000",
+    "hot": "mix watch --hot",
+    "prod": "npm run production",
+    "production": "mix --production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Daalder/feeds.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Daalder/feeds/issues"
+  },
+  "homepage": "https://github.com/Daalder/feeds#readme",
+  "dependencies": {
+    "postcss": "^8.4.14",
+    "tailwindcss": "^2.2.19"
+  }
+}
