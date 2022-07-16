@@ -209,8 +209,8 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         }
 
         // Upload the file to S3
-//        $this->uploadToS3($this->filePath);
-//        $this->removeLocalFile();
+        $this->uploadToS3($this->filePath);
+        $this->removeLocalFile();
     }
 
     /**
