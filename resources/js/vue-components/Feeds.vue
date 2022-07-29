@@ -45,7 +45,8 @@ export default {
                     // 'NetrivalsFeed',
                     // 'ShoprFeed',
                     // 'TradeTrackerFeed',
-                    // 'FacebookFeed'
+                    // 'FacebookFeed',
+                    // 'GoogleLocalInventoryFeed'
                 ],
                 'stores': [
                     // 'nubuitenbe',
