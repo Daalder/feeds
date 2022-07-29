@@ -84,8 +84,8 @@ trait CreatesTestProducts
     {
         $this->createGoogleTestProducts();
         config(['daalder-feeds.main-google-store' => [
-            'store_code' => 23,
-//            'daalder-pickup-point' => 1,
+            'store-code' => 23,
+//            'main-pickup-point-id' => 1,
         ]]);
 
         $this->validTestProducts = 8;

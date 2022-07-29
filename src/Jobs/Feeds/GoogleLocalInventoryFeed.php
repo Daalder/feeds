@@ -45,11 +45,10 @@ class GoogleLocalInventoryFeed extends Feed
      */
     protected function productToFeedRow(Product $product): array
     {
-        $mainGoogleStore = config('daalder-feeds.main-google-store');
         $isOutOfStock = !$product->is_for_sale;
 
         $mainGoogleStoreRow = [
-            'store_code' => $mainGoogleStore['store_code'],
+            'store_code' => config('daalder-feeds.main-google-store.store-code'),
             'id' => $product->id,
             'quantity' => $product->stock->sum('in_stock'),
             'availability' => $isOutOfStock ? 'out_of_stock' : 'in_stock',
@@ -58,7 +57,6 @@ class GoogleLocalInventoryFeed extends Feed
         ];
 
         $additionalStoresCount = $this->getSecondaryBusinessLocationsCount();
-
 
         if ($additionalStoresCount) {
             $rows = [$mainGoogleStoreRow];
@@ -95,15 +93,10 @@ class GoogleLocalInventoryFeed extends Feed
      */
     private function getSecondaryBusinessLocationsCount(): int
     {
-        $mainBusinessLocation = config('daalder-feeds.main-google-store');
-
-        if (array_get($mainBusinessLocation, 'daalder-pickup-point')) {
-            $mainStorePickupPointId = array_get($mainBusinessLocation, 'daalder-pickup-point');
-            $secondaryBusinessLocations = $this->store->pickupPoints->filter(function ($pickupPoint) use ($mainStorePickupPointId) {
-                return $pickupPoint->id !== $mainStorePickupPointId;
-            });
-
-            return $secondaryBusinessLocations->count();
+        if (config('daalder-feeds.main-google-store.main-pickup-point-id')) {
+            return $this->store->pickupPoints
+                ->where('id', '!=', config('daalder-feeds.main-google-store.main-pickup-point-id'))
+                ->count();
         }
 
         return 0;

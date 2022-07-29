@@ -15,6 +15,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -174,15 +175,11 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
                         $feedRow = $this->productToFeedRow($product);
-                        if(is_numeric(key($feedRow))) {
-                            $feedRows = collect($feedRow);
+                        $feedRows = Arr::isAssoc($feedRow) ? [$feedRow] : $feedRow;
 
-                            $feedRows->each(function($item) use ($product, $feedLines) {
-                                $feedLines->push($this->postProcessFeedRow($item, $product));
-                            });
+                        foreach($feedRows as $row) {
+                            $feedLines->push($this->postProcessFeedRow($row, $product));
                         }
-
-                        $feedLines->push($this->postProcessFeedRow($feedRow, $product));
                     } catch (\Exception $ex) {
                         // Log exception and return an empty string
                         logger()->error($this->vendor.'.'.$this->store->code.": Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
@@ -472,15 +469,6 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
     public function getProductsCount($query)
     {
-        $collection = collect([]);
-        $collection->map(function($item) {
-            if(is_numeric(key($item))) {
-                foreach($item as $subItem) {
-                    return $subItem;
-                }
-            }
-           return $item;
-        });
         return $query->count();
     }
 
