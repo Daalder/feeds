@@ -3,6 +3,7 @@
 namespace Daalder\Feeds\Commands;
 
 use Daalder\Feeds\Jobs\ValidateFeedsCreated;
+use Daalder\Feeds\Services\FeedsHandler;
 use Illuminate\Bus\Batch;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Bus;
@@ -29,39 +30,26 @@ class GenerateFeedsCommand extends Command
      * @var string
      */
     protected $description = 'Generate the enabled feeds for the enabled stores.';
+    /**
+     * @var FeedsHandler
+     */
+    private $feedsHandler;
+
+    public function __construct(FeedsHandler $feedsHandler)
+    {
+        parent::__construct();
+        $this->feedsHandler = $feedsHandler;
+    }
+
 
     /**
-     * Execute the console command.
-     *
-     * @return mixed
+     * @return void
+     * @throws \Throwable
      */
     public function handle()
     {
-        $feeds = config('daalder-feeds.enabled-feeds');
-        $stores = Store::query()
-            ->whereIn('code', config('daalder-feeds.enabled-store-codes'))
-            ->get();
+        [$feeds, $stores] = $this->feedsHandler->generateFeeds();
 
-        $batch = [];
-
-        foreach($feeds as $feed) {
-            foreach($stores as $store) {
-                $batch[] = new $feed($store);
-            }
-        }
-
-        Bus::batch($batch)
-            ->name('Generate feeds')
-            ->finally(function(Batch $batch) {
-                if(config('daalder-feeds.validate-feeds.enabled') === true) {
-                    ValidateFeedsCreated::dispatchSync();
-                }
-
-                event(new CommandHeartBeat('feeds-generated'));
-            })
-            ->onQueue('medium')
-            ->allowFailures()
-            ->dispatch();
 
         $this->info('Queued '. count($feeds) * $stores->count() . ' feeds.');
     }
