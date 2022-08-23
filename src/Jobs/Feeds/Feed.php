@@ -15,6 +15,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -163,39 +164,32 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             return;
         }
 
-        $expectedProductCount = $query->count();
+        $expectedProductCount = $this->getProductsCount($query);
 
         // Chunk-process the products
         $query->chunkById($this->chunkSize, function ($products) {
+            $feedLines = collect([]);
             // Map the validProducts into feed rows
-            $feedLines = $products
-                ->map(function ($product) {
+            $products
+                ->each(function ($product) use ($feedLines) {
                     try {
                         // Call the productToFeedRow method on the extending class (AdmarktFeed, BeslistFeed, etc).
                         $feedRow = $this->productToFeedRow($product);
-                        $afterCreatingFeedRowEvent = new AfterCreatingFeedRow($this->vendor, $this->store, $feedRow, $product);
-                        event($afterCreatingFeedRowEvent);
-                        $feedRow = $afterCreatingFeedRowEvent->getFeedRow();
+                        $feedRows = Arr::isAssoc($feedRow) ? [$feedRow] : $feedRow;
 
-                        // Overwrite preconfigured fields for this vendor
-                        $fieldOverwrites = config('daalder-feeds.field-overwrites.'.$this->vendor);
-                        if ($fieldOverwrites) {
-                            foreach ($fieldOverwrites as $field => $value) {
-                                $feedRow[$field] = $value;
-                            }
+                        foreach($feedRows as $row) {
+                            $feedLines->push($this->postProcessFeedRow($row, $product));
                         }
-
-                        // Format and return the feed row
-                        return $this->formatFeedLine($feedRow);
                     } catch (\Exception $ex) {
                         // Log exception and return an empty string
                         logger()->error($this->vendor.'.'.$this->store->code.": Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
 
                         return '';
                     }
-                })
+                    return null;
+                });
                 // Implode the array of rows into a single string
-                ->implode('');
+            $feedLines = $feedLines->implode('');
 
             // Append the feed rows for the product chunk to the feed file
             File::append($this->filePath, $feedLines);
@@ -471,5 +465,28 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     public function uniqueId()
     {
         return $this->vendor.$this->store->code;
+    }
+
+    public function getProductsCount($query)
+    {
+        return $query->count();
+    }
+
+    public function postProcessFeedRow($feedRow, $product)
+    {
+        $afterCreatingFeedRowEvent = new AfterCreatingFeedRow($this->vendor, $this->store, $feedRow, $product);
+        event($afterCreatingFeedRowEvent);
+        $feedRow = $afterCreatingFeedRowEvent->getFeedRow();
+
+        // Overwrite preconfigured fields for this vendor
+        $fieldOverwrites = config('daalder-feeds.field-overwrites.'.$this->vendor);
+        if ($fieldOverwrites) {
+            foreach ($fieldOverwrites as $field => $value) {
+                $feedRow[$field] = $value;
+            }
+        }
+
+        // Format and return the feed row
+        return $this->formatFeedLine($feedRow);
     }
 }

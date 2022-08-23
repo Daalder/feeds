@@ -80,6 +80,17 @@ trait CreatesTestProducts
         $this->validTestProducts = 8;
     }
 
+    protected function createGoogleLocalInventoryTestProducts()
+    {
+        $this->createGoogleTestProducts();
+        config(['daalder-feeds.main-google-store' => [
+            'store-code' => 23,
+//            'main-pickup-point-id' => 1,
+        ]]);
+
+        $this->validTestProducts = 8;
+    }
+
     protected function createAdmarktTestProducts()
     {
         // Get 12 products, with 2 without images
