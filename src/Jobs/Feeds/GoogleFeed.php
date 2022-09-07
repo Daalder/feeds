@@ -110,7 +110,7 @@ class GoogleFeed extends Feed
             'mpn' => $product->sku,
             'custom_label_0' => $this->margeMapper($product->marge),             // Marge
             'custom_label_1' => ($product->isDropShipped() == false) ? 1 : 2,    // Product is dropship
-            'custom_label_2' => ($product->stock->count() > 0) ? $product->stock->sum('in_stock') : 0,
+            'custom_label_2' => $product->marge ?? '',        // Gross margin
             // Nubuiten lokale voorraad absolute aantallen
             'custom_label_3' => '',
             // Voor dinsdag besteld zelfde week in huis producten
