@@ -21,7 +21,7 @@ class GoogleLocalInventoryFeed extends Feed
         'quantity',
         'availability',
         'pickup_method',
-        'pickup_sla'
+//        'pickup_sla'
     ];
 
     protected function getProductQuery(): Builder
