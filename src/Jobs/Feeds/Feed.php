@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Pionect\Daalder\Events\Feed\FeedJobFailed;
 use Pionect\Daalder\Models\Product\Product;
+use Pionect\Daalder\Models\Product\Visibility;
 use Pionect\Daalder\Models\Product\Repositories\ProductRepository;
 use Pionect\Daalder\Models\Store\Store;
 use Pionect\Daalder\Services\ActiveStore;
@@ -111,6 +112,9 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             // that are active for $this->store
             ->whereHas('stores', function (Builder $query) {
                 $query->where(Store::table().'.id', $this->store->id);
+            })
+            ->whereHas('visibility', function (Builder $query) {
+                $query->where(Visibility::table().'.code', '!=', Visibility::ONLY_SUBPRODUCT);
             })
             ->has('prices')
             // that have an attributeset
