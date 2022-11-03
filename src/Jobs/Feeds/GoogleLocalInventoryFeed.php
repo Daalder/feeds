@@ -45,7 +45,7 @@ class GoogleLocalInventoryFeed extends Feed
      */
     protected function productToFeedRow(Product $product): array
     {
-        $isOutOfStock = !$product->is_for_sale && !product->is_procured_on_demand;
+        $isOutOfStock = !$product->is_for_sale && !$product->is_procured_on_demand;
 
         $mainGoogleStoreRow = [
             'store_code' => config('daalder-feeds.main-google-store.store-code'),
