@@ -96,7 +96,7 @@ class GoogleFeed extends Feed
             'sale_price' => '', //Filled below,
             'cost_of_goods_sold' => $product->cost_price ? $product->cost_price.' '.$currency : '',
             'currency' => $currency,
-            'availability' => ($product->is_for_sale == 1) ? 'in_stock' : 'out_of_stock',
+            'availability' => ($product->is_for_sale || $product->is_procured_on_demand) ? 'in_stock' : 'out_of_stock',
             'shipping' => $shipping,
             'shipping_label' => $product->shippingTier ? $product->shippingTier->id : '',
             'expiration_date' => now()->addWeeks(2)->toDateString(),
