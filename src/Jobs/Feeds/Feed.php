@@ -410,6 +410,19 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                 return (int) ceil($marge / 2.5);
         }
     }
+    
+    protected function getGrossMargin($product)
+    {
+        if($product->cost_price > 0) {
+            $currentPriceExcludingVat = optional($product->getCurrentPrice())->price_excluding_vat;
+            if ($currentPriceExcludingVat) {
+                return round((($currentPriceExcludingVat - $product->cost_price) / $currentPriceExcludingVat) * 100,
+                    0);
+            }
+        }
+        return "";
+        
+    }
 
     /**
      * @param  Product  $product
