@@ -415,7 +415,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     {
         if($product->cost_price > 0) {
             $currentPriceExcludingVat = optional($product->getCurrentPrice())->price_excluding_vat;
-            if ($currentPriceExcludingVat) {
+            if ($currentPriceExcludingVat && $currentPriceExcludingVat > 0) {
                 return round((($currentPriceExcludingVat - $product->cost_price) / $currentPriceExcludingVat) * 100,
                     0);
             }
