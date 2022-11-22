@@ -85,6 +85,7 @@ class GoogleFeed extends Feed
             $shipping .= ':';
             $shipping .= MoneyFactory::toString($rate->price).' '.$currency;
         }
+        $isForSale = ($product->stock->sum('in_stock') <= 0 && !$product->is_procured_on_demand) ? false : $product->is_for_sale;
 
         $fields = [
             'id' => $product->id,
@@ -96,7 +97,7 @@ class GoogleFeed extends Feed
             'sale_price' => '', //Filled below,
             'cost_of_goods_sold' => $product->cost_price ? $product->cost_price.' '.$currency : '',
             'currency' => $currency,
-            'availability' => ($product->is_for_sale == 1) ? 'in_stock' : 'out_of_stock',
+            'availability' => $isForSale ? 'in_stock' : 'out_of_stock',
             'shipping' => $shipping,
             'shipping_label' => $product->shippingTier ? $product->shippingTier->id : '',
             'expiration_date' => now()->addWeeks(2)->toDateString(),
