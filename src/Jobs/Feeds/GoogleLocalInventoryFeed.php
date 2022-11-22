@@ -50,7 +50,7 @@ class GoogleLocalInventoryFeed extends Feed
         $mainGoogleStoreRow = [
             'store_code' => config('daalder-feeds.main-google-store.store-code'),
             'id' => $product->id,
-            'quantity' => !$isForSale ? 0 : $product->stock->sum('in_stock') > 0 ? $product->stock->sum('in_stock') : 4,
+            'quantity' => !$isForSale ? 0 : $product->stock->sum('in_stock'),
             'availability' => $isForSale ? 'in_stock' : 'out_of_stock',
             'pickup_method' => 'buy',
 //            'pickup_sla' => ''
