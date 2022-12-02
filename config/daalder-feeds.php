@@ -21,4 +21,5 @@ return [
         'receiver-names' => [],
     ],
     'keep-feeds' => '7 days',
+    'upload-feeds' => env('UPLOAD_FEEDS', true)
 ];

@@ -107,6 +107,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     protected function getProductQuery()
     {
         return $this->productRepository->newQuery()
+            ->where('id', '>', 59100)
             // that have products
             ->has('images')
             // that are active for $this->store
@@ -209,9 +210,12 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             throw new \Error($this->vendor.'.'.$this->store->code.': Feed should contain '.$expectedProductCount.' products, but instead contains '.$actualProductCount.' products. Cancelling upload.');
         }
 
-        // Upload the file to S3
-        $this->uploadToS3($this->filePath);
-        $this->removeLocalFile();
+        if(config('daalder-feeds.upload-feeds'))
+        {
+            // Upload the file to S3
+            $this->uploadToS3($this->filePath);
+            $this->removeLocalFile();
+        }
     }
 
     /**
