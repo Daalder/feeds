@@ -107,7 +107,6 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     protected function getProductQuery()
     {
         return $this->productRepository->newQuery()
-            ->where('id', '>', 59100)
             // that have products
             ->has('images')
             // that are active for $this->store
