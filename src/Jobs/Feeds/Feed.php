@@ -209,9 +209,12 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             throw new \Error($this->vendor.'.'.$this->store->code.': Feed should contain '.$expectedProductCount.' products, but instead contains '.$actualProductCount.' products. Cancelling upload.');
         }
 
-        // Upload the file to S3
-        $this->uploadToS3($this->filePath);
-        $this->removeLocalFile();
+        if(config('daalder-feeds.upload-feeds'))
+        {
+            // Upload the file to S3
+            $this->uploadToS3($this->filePath);
+            $this->removeLocalFile();
+        }
     }
 
     /**

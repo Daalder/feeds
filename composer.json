@@ -16,8 +16,8 @@
     ],
     "require": {
         "ext-zip": "*",
-        "php": "^7.4|^8.0",
-        "pionect/daalder": "^15|^16|^17|^18|dev-acceptance|dev-master|dev-develop"
+        "php": "^8.0",
+        "pionect/daalder": "^19|dev-acceptance|dev-master|dev-develop"
     },
     "require-dev": {
         "orchestra/testbench": "^6.0",
