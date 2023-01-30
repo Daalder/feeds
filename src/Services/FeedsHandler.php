@@ -38,7 +38,7 @@ class FeedsHandler
 
                 event(new CommandHeartBeat('feeds-generated'));
             })
-            ->onQueue('medium')
+            ->onQueue(config('daalder-feeds.feeds-queue'))
             ->allowFailures()
             ->dispatch();
 
