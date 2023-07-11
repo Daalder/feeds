@@ -109,13 +109,13 @@ class GoogleFeed extends Feed
             'gtin' => $product->ean,
             'brand' => '', //Filled below
             'mpn' => $product->sku,
-            'custom_label_0' => $this->margeMapper($product->marge),             // Marge
-            'custom_label_1' => ($product->isDropShipped() == false) ? 1 : 2,    // Product is dropship
-            'custom_label_2' => $this->getGrossMargin($product),        // Gross margin
+            'custom_label_0' => '',
+            'custom_label_1' => ($product->isDropShipped() == false) ? 1 : 2, // Product is dropship
+            'custom_label_2' => $this->getGrossMargin($product), // Gross margin
             // Nubuiten lokale voorraad absolute aantallen
             'custom_label_3' => '',
             // Voor dinsdag besteld zelfde week in huis producten
-            'custom_label_4' => $this->getTag($product),                          // First G: tag.
+            'custom_label_4' => $this->getTag($product), // First G: tag.
         ];
 
         if ($product->shippingTime) {
@@ -131,7 +131,7 @@ class GoogleFeed extends Feed
                 $fields['sale_price'] = $this->priceFormatter->getFormattedPrice($product);
             }
         }
-        
+
         $googleProductCategoryProperty = $product->getProperty('google-product-category');
         if($googleProductCategoryProperty) {
             $googleProductCode =  optional(Option::find($googleProductCategoryProperty->pivot->value))->code;
