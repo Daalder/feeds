@@ -110,17 +110,15 @@ class GoogleFeed extends Feed
             'brand' => '', //Filled below
             'mpn' => $product->sku,
             'custom_label_0' => '',
-            'custom_label_1' => ($product->isDropShipped() == false) ? 1 : 2, // Product is dropship
+            'custom_label_1' => '',
             'custom_label_2' => $this->getGrossMargin($product), // Gross margin
-            // Nubuiten lokale voorraad absolute aantallen
-            'custom_label_3' => '',
-            // Voor dinsdag besteld zelfde week in huis producten
+            'custom_label_3' => 'non-drop', //Dropship products Nubuiten (see function below),
             'custom_label_4' => $this->getTag($product), // First G: tag.
         ];
 
         if ($product->shippingTime) {
             if ($product->shippingTime->id == 10) {
-                $fields['custom_label_3'] = 1;
+                $fields['custom_label_3'] = 'drop';
             }
         }
 
