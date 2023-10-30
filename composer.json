@@ -20,8 +20,7 @@
         "pionect/daalder": "^21|dev-acceptance|dev-master|dev-develop|dev-DAN-267-refactor-api-authentication"
     },
     "require-dev": {
-        "orchestra/testbench": "^6.0",
-        "orchestra/database": "6.x-dev",
+        "orchestra/testbench": "^7.0",
         "phpunit/phpunit": "^9.3"
     },
     "autoload": {
