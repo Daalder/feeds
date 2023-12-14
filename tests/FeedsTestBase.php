@@ -3,11 +3,9 @@
 namespace Daalder\Feeds\Tests;
 
 use Daalder\Feeds\Jobs\Feeds\Feed;
-use Daalder\Feeds\Jobs\Feeds\GoogleFeed;
 use Daalder\Feeds\Tests\TestCase as DaalderTestCase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use Pionect\Daalder\Models\Store\Store;
 use Symfony\Component\Finder\SplFileInfo;
 
 /**

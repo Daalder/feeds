@@ -2,15 +2,10 @@
 
 namespace Daalder\Feeds\Tests;
 
-use Astrotomic\Translatable\TranslatableServiceProvider;
 use Daalder\Feeds\FeedsServiceProvider;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\File;
-use Laravel\Passport\PassportServiceProvider;
-use Laravel\Scout\ScoutServiceProvider;
-use Pionect\Daalder\DaalderServiceProvider;
-use Pionect\Daalder\ServiceProviders\ElasticScoutConfigServiceProvider;
 use Pionect\Daalder\Services\CustomerToken\CustomerTokenResolver;
 use Pionect\Daalder\Tests\TestCase as DaalderTestCase;
 use Pionect\Daalder\Tests\TestCustomerTokenResolver;
@@ -40,8 +35,9 @@ class TestCase extends DaalderTestCase
             ]);
 
             $this->artisan('db:seed');
+
             // Do full ES sync now
-            $this->artisan('elastic:sync --drop --create');
+            $this->artisan('elastic:sync');
 
             $this->app[Kernel::class]->setArtisan(null);
 

@@ -2,13 +2,9 @@
 
 namespace Daalder\Feeds\Commands;
 
-use Daalder\Feeds\Jobs\ValidateFeedsCreated;
 use Daalder\Feeds\Services\FeedsHandler;
-use Illuminate\Bus\Batch;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Bus;
-use Pionect\Daalder\Events\CommandHeartBeat;
-use Pionect\Daalder\Models\Store\Store;
+use Throwable;
 
 /**
  * Class GenerateFeeds.
@@ -22,6 +18,12 @@ class GenerateFeedsCommand extends Command
      */
     protected $name = 'feeds:generate';
 
+
+    /**
+     * The console command signature
+     *
+     * @var string
+     */
     protected $signature = 'feeds:generate';
 
     /**
@@ -30,10 +32,8 @@ class GenerateFeedsCommand extends Command
      * @var string
      */
     protected $description = 'Generate the enabled feeds for the enabled stores.';
-    /**
-     * @var FeedsHandler
-     */
-    private $feedsHandler;
+
+    private FeedsHandler $feedsHandler;
 
     public function __construct(FeedsHandler $feedsHandler)
     {
@@ -41,16 +41,13 @@ class GenerateFeedsCommand extends Command
         $this->feedsHandler = $feedsHandler;
     }
 
-
-    /**
-     * @return void
-     * @throws \Throwable
-     */
-    public function handle()
+    public function handle(): void
     {
-        [$feeds, $stores] = $this->feedsHandler->generateFeeds();
-
-
-        $this->info('Queued '. count($feeds) * $stores->count() . ' feeds.');
+        try {
+            [$feeds, $stores] = $this->feedsHandler->generateFeeds();
+            $this->info('Queued '. count($feeds) * $stores->count() . ' feeds.');
+        } catch (Throwable $e) {
+            $this->error($e->getMessage());
+        }
     }
 }
