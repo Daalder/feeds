@@ -18,14 +18,12 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
 use Pionect\Daalder\Events\Feed\FeedJobFailed;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\Product\Visibility;
 use Pionect\Daalder\Models\Product\Repositories\ProductRepository;
 use Pionect\Daalder\Models\Store\Store;
 use Pionect\Daalder\Services\ActiveStore;
-use Pionect\Daalder\Services\MoneyFactory;
 
 abstract class Feed implements ShouldQueue, ShouldBeUnique
 {
@@ -107,6 +105,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     protected function getProductQuery()
     {
         return $this->productRepository->newQuery()
+            ->where('is_for_sale', 1)
             // that have products
             ->has('images')
             // that are active for $this->store
