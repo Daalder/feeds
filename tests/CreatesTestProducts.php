@@ -50,9 +50,9 @@ trait CreatesTestProducts
     protected function createGoogleTestProducts()
     {
         $includeInGoogleFeedProperty = $this->createFeedAttributeProperty('include-in-google-feed', 'Include in Google Feed');
+
         // Get 12 products, with 2 without images
         $this->createBaseProduct();
-
 
         // One product per attributeset in the excludedGoogleAttributeSets array
         foreach ((new GoogleFeed(Store::first()))->excludedGoogleAttributeSets as $blockedAttributeSetId) {

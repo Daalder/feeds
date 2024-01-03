@@ -31,7 +31,6 @@ class GoogleLocalInventoryFeed extends Feed
         return $query
             ->whereNotIn('productattributeset_id', $this->excludedGoogleAttributeSets)
             ->whereNull('deleted_at')
-            ->where('is_for_sale', '=', 1)
             ->whereHas('productproperties', function ($query) {
                 $query
                     ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table() . '.id')

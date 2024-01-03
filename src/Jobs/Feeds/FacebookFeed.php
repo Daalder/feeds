@@ -4,7 +4,6 @@ namespace App\Jobs\Feeds;
 
 namespace Daalder\Feeds\Jobs\Feeds;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
@@ -55,7 +54,6 @@ class FacebookFeed extends Feed
 
         return $query
             ->whereNotIn('productattributeset_id', $this->excludedGoogleAttributeSets)
-            ->where('is_for_sale', '!=', 0)
             ->whereNull('deleted_at')
             ->whereHas('productproperties', function ($query) {
                 $query

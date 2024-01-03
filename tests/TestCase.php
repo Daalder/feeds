@@ -2,17 +2,13 @@
 
 namespace Daalder\Feeds\Tests;
 
-use Astrotomic\Translatable\TranslatableServiceProvider;
 use Daalder\Feeds\FeedsServiceProvider;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\File;
-use Laravel\Passport\PassportServiceProvider;
-use Laravel\Scout\ScoutServiceProvider;
-use Orchestra\Database\ConsoleServiceProvider;
-use Pionect\Daalder\DaalderServiceProvider;
-use Pionect\Daalder\ServiceProviders\ElasticScoutConfigServiceProvider;
+use Pionect\Daalder\Services\CustomerToken\CustomerTokenResolver;
 use Pionect\Daalder\Tests\TestCase as DaalderTestCase;
+use Pionect\Daalder\Tests\TestCustomerTokenResolver;
 use ScoutElastic\ScoutElasticServiceProvider;
 use Spatie\Permission\PermissionServiceProvider;
 
@@ -39,8 +35,9 @@ class TestCase extends DaalderTestCase
             ]);
 
             $this->artisan('db:seed');
+
             // Do full ES sync now
-            $this->artisan('elastic:sync --drop --create');
+            $this->artisan('elastic:sync');
 
             $this->app[Kernel::class]->setArtisan(null);
 
@@ -61,13 +58,15 @@ class TestCase extends DaalderTestCase
      */
     protected function getEnvironmentSetUp($app)
     {
-        foreach (File::files(__DIR__ . '/../vendor/pionect/daalder/config') as $config) {
+        foreach (File::files(daalder_path('config')) as $config) {
             if ($config->getExtension() == 'php') {
                 $key = str_replace('.php', '', $config->getFilename());
                 $default = config()->get($key, []);
                 config()->set($key, array_merge($default, require $config->getRealPath()));
             }
         }
+
+        $app['config']->set('app.faker_locale', 'nl_NL');
 
         $orchestra = __DIR__ . '/../vendor/orchestra/testbench-core/laravel';
         $migrationDirectory = realpath(__DIR__ . '/../vendor/pionect/daalder/database/migrations');
@@ -78,31 +77,18 @@ class TestCase extends DaalderTestCase
 
         copy(__DIR__ . '/../vendor/pionect/daalder/tests/storage/oauth-private.key', $orchestra . '/storage/oauth-private.key');
         copy(__DIR__ . '/../vendor/pionect/daalder/tests/storage/oauth-public.key', $orchestra . '/storage/oauth-public.key');
+
+        // Fonts directory is required for the DOMPDF package
+        if(!file_exists(__DIR__.'/../vendor/orchestra/testbench-core/laravel/storage/fonts/')) {
+            mkdir(__DIR__.'/../vendor/orchestra/testbench-core/laravel/storage/fonts/');
+        }
+
+        $app->singleton(CustomerTokenResolver::class, TestCustomerTokenResolver::class);
     }
 
     protected function getPackageProviders($app): array
     {
-        return [
-            DaalderServiceProvider::class,
-            ScoutServiceProvider::class,
-            ElasticScoutConfigServiceProvider::class,
-            PassportServiceProvider::class,
-            PermissionServiceProvider::class,
-            TranslatableServiceProvider::class,
-            FeedsServiceProvider::class,
-            ConsoleServiceProvider::class,
-            ScoutElasticServiceProvider::class,
-        ];
-    }
-
-    /**
-     * Setup the test environment.
-     */
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-//        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        return array_merge(parent::getPackageProviders($app), [FeedsServiceProvider::class]);
     }
 
     /**
