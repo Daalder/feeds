@@ -17,7 +17,7 @@
     "require": {
         "ext-zip": "*",
         "php": "^8.0",
-        "pionect/daalder": "^21|dev-acceptance|dev-master|dev-develop|dev-DAN-267-refactor-api-authentication"
+        "pionect/daalder": "^22|dev-acceptance|dev-master|dev-develop|dev-DAN-267-refactor-api-authentication"
     },
     "require-dev": {
         "orchestra/testbench": "^7.0",
