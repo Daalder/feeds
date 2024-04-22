@@ -3,7 +3,6 @@
 namespace Daalder\Feeds\Jobs\Feeds;
 
 use Daalder\Feeds\Services\VariationChecker;
-use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\ProductAttribute\Option;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
@@ -130,6 +129,11 @@ class GoogleFeed extends Feed
             }
         }
 
+        if ($this->shouldShowPricePerSquareMeter($product)) {
+            $fields['unit_pricing_measure'] = $product->getProperty('minimaleafname') ?? 1 . 'sqm';
+            $fields['unit_pricing_measure_base'] = '1sqm';
+        }
+
         $googleProductCategoryProperty = $product->getProperty('google-product-category');
         if($googleProductCategoryProperty) {
             $googleProductCode =  optional(Option::find($googleProductCategoryProperty->pivot->value))->code;
@@ -158,5 +162,18 @@ class GoogleFeed extends Feed
         $tag = $product->tags()->where('name', 'like', 'G:%')->first();
 
         return ($tag) ? $tag->name : '';
+    }
+
+    private function shouldShowPricePerSquareMeter(Product $product): bool
+    {
+        $productTemplate = 'simple';
+
+        if (isset($product->template)) {
+            $productTemplate = $product->template;
+        } elseif ($product->productattributeset && $product->productattributeset->product_template) {
+            $productTemplate = $product->productattributeset->product_template->name;
+        }
+
+        return $productTemplate === 'stone';
     }
 }
