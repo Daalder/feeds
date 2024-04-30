@@ -146,18 +146,26 @@ class GoogleFeed extends Feed
     private function getShippingValues(Product $product, string $currency): string
     {
         $countryCode = $this->priceFormatter->getCountryCode();
-
-        $rate = null;
+        $shippingMethod = null;
+        $price = '';
 
         if ($product->shippingTier && $product->shippingTier->methods) {
-            $rate = $product->shippingTier->methods->where('country_code', $countryCode)->first();
+            $shippingMethod = $product->shippingTier->methods->where('country_code', $countryCode)->first();
+        }
+
+        if ($shippingMethod && $shippingMethod->price) {
+            $price = sprintf(
+                '%s %s',
+                MoneyFactory::toString($shippingMethod->price),
+                $currency
+            );
         }
 
         $attributes = [
             'country' => $countryCode,
             'region' => '',
             'service' => '',
-            'price' => sprintf('%s %s', MoneyFactory::toString($rate->price), $currency),
+            'price' => $price,
             'max_handling_time' => 0,
             'max_transit_time' => $product->shippingTime->days,
         ];
