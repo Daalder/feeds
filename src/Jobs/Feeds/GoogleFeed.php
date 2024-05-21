@@ -3,11 +3,9 @@
 namespace Daalder\Feeds\Jobs\Feeds;
 
 use Daalder\Feeds\Services\VariationChecker;
-use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\ProductAttribute\Option;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
-use Pionect\Daalder\Models\Shipping\ShippingMethod;
 use Pionect\Daalder\Services\MoneyFactory;
 
 class GoogleFeed extends Feed
@@ -30,7 +28,7 @@ class GoogleFeed extends Feed
         'cost_of_goods_sold',
         'currency',
         'availability',
-        'shipping',
+        'shipping(country:region:postal_code:price:max_handling_time:max_transit_time)',
         'shipping_label',
         'expiration_date',
         'condition',
@@ -67,24 +65,9 @@ class GoogleFeed extends Feed
     {
         $priceObject = $product->getCurrentPrice();
         $currency = $this->priceFormatter->getCurrency($product);
-        $countryCode = $this->priceFormatter->getCountryCode();
         /**@var VariationChecker $variationChecker */
         $variationChecker = app(VariationChecker::class);
 
-        $shipping = '';
-        /** @var ShippingMethod $rate */
-        $rate = null;
-
-        if ($product->shippingTier && $product->shippingTier->methods) {
-            $rate = $product->shippingTier->methods->where('country_code', $countryCode)->first();
-        }
-
-        if ($rate) {
-            $shipping = "{$countryCode}:";
-            $shipping .= ':';
-            $shipping .= ':';
-            $shipping .= MoneyFactory::toString($rate->price).' '.$currency;
-        }
         $isForSale = ($product->stock->sum('in_stock') <= 0 && !$product->is_procured_on_demand) ? false : $product->is_for_sale;
 
         $fields = [
@@ -98,7 +81,7 @@ class GoogleFeed extends Feed
             'cost_of_goods_sold' => $product->cost_price ? $product->cost_price.' '.$currency : '',
             'currency' => $currency,
             'availability' => $isForSale ? 'in_stock' : 'out_of_stock',
-            'shipping' => $shipping,
+            'shipping(country:region:postal_code:price:max_handling_time:max_transit_time)' => $this->getShippingValues($product, $currency),
             'shipping_label' => $product->shippingTier ? $product->shippingTier->id : '',
             'expiration_date' => now()->addWeeks(2)->toDateString(),
             'condition' => 'new',
@@ -158,5 +141,35 @@ class GoogleFeed extends Feed
         $tag = $product->tags()->where('name', 'like', 'G:%')->first();
 
         return ($tag) ? $tag->name : '';
+    }
+
+    private function getShippingValues(Product $product, string $currency): string
+    {
+        $countryCode = $this->priceFormatter->getCountryCode();
+        $shippingMethod = null;
+        $price = '';
+
+        if ($product->shippingTier && $product->shippingTier->methods) {
+            $shippingMethod = $product->shippingTier->methods->where('country_code', $countryCode)->first();
+        }
+
+        if ($shippingMethod && $shippingMethod->price) {
+            $price = sprintf(
+                '%s %s',
+                MoneyFactory::toString($shippingMethod->price),
+                $currency
+            );
+        }
+
+        $attributes = [
+            'country' => $countryCode,
+            'region' => '',
+            'service' => '',
+            'price' => $price,
+            'max_handling_time' => 0,
+            'max_transit_time' => $product->shippingTime->days,
+        ];
+
+        return implode(':', array_values($attributes));
     }
 }
