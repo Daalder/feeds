@@ -58,7 +58,8 @@ class GoogleFeed extends Feed
                     ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
                     ->where('code', 'include-in-google-feed')
                     ->where('value', '1');
-            });
+            })
+            ->has('shippingTimes');
     }
 
     protected function productToFeedRow(Product $product)
