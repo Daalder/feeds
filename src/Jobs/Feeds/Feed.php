@@ -37,9 +37,6 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     /** @var Store */
     protected $store;
 
-    /** @var string */
-    protected $feedsBucket = '';
-
     protected string $feedsDisk = '';
 
     /** @var string */
@@ -97,7 +94,6 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     {
         return $this->productRepository->newQuery()
             ->where('is_for_sale', 1)
-            ->where('id', '<', 59)
             // that have products
             ->has('images')
             // that are active for $this->store
@@ -196,7 +192,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
         logger()->info($this->vendor.'.'.$this->store->code.': Finished with file line count '.$actualProductCount.', should be '.$expectedProductCount.' products');
 
-        // If line count in feed is not right, don't proceed to upload to S3
+        // If line count in feed is not right, don't proceed to upload to storage
         if ($actualProductCount !== $expectedProductCount) {
             throw new Error($this->vendor.'.'.$this->store->code.': Feed should contain '.$expectedProductCount.' products, but instead contains '.$actualProductCount.' products. Cancelling upload.');
         }
