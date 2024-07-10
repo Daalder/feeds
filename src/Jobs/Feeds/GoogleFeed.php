@@ -3,6 +3,7 @@
 namespace Daalder\Feeds\Jobs\Feeds;
 
 use Daalder\Feeds\Services\VariationChecker;
+use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\ProductAttribute\Option;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
@@ -46,7 +47,7 @@ class GoogleFeed extends Feed
         'custom_label_4',
     ];
 
-    protected function getProductQuery()
+    protected function getProductQuery(): Builder
     {
         $query = parent::getProductQuery();
 
@@ -66,10 +67,10 @@ class GoogleFeed extends Feed
     {
         $priceObject = $product->getCurrentPrice();
         $currency = $this->priceFormatter->getCurrency($product);
-        /**@var VariationChecker $variationChecker */
+        /** @var VariationChecker $variationChecker */
         $variationChecker = app(VariationChecker::class);
 
-        $isForSale = ($product->stock->sum('in_stock') <= 0 && !$product->is_procured_on_demand) ? false : $product->is_for_sale;
+        $isForSale = ($product->stock->sum('in_stock') <= 0 && ! $product->is_procured_on_demand) ? false : $product->is_for_sale;
 
         $fields = [
             'id' => $product->id,
@@ -115,19 +116,19 @@ class GoogleFeed extends Feed
         }
 
         $googleProductCategoryProperty = $product->getProperty('google-product-category');
-        if($googleProductCategoryProperty) {
-            $googleProductCode =  optional(Option::find($googleProductCategoryProperty->pivot->value))->code;
+        if ($googleProductCategoryProperty) {
+            $googleProductCode = optional(Option::find($googleProductCategoryProperty->pivot->value))->code;
             $fields['google_product_category'] = $googleProductCode ?: '';
         }
 
-        if (!is_null($product->brand)) {
+        if (! is_null($product->brand)) {
             $fields['brand'] = $product->brand->name;
         }
 
         $image = $product->images()
             ->first();
 
-        if (!is_null($image)) {
+        if (! is_null($image)) {
             $fields['image_link'] = $image->src;
         }
 
@@ -137,7 +138,7 @@ class GoogleFeed extends Feed
     /**
      * @return string
      */
-    protected function getTag(Product $product)
+    protected function getTag(Product $product): ?string
     {
         $tag = $product->tags()->where('name', 'like', 'G:%')->first();
 

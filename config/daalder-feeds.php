@@ -1,15 +1,8 @@
 <?php
 
-use Daalder\Feeds\Jobs\Feeds\AdmarktFeed;
-use Daalder\Feeds\Jobs\Feeds\BeslistFeed;
-use Daalder\Feeds\Jobs\Feeds\BolFeed;
-use Daalder\Feeds\Jobs\Feeds\GoogleFeed;
-use Daalder\Feeds\Jobs\Feeds\NetrivalsFeed;
-use Daalder\Feeds\Jobs\Feeds\ShoprFeed;
-use Daalder\Feeds\Jobs\Feeds\TradeTrackerFeed;
-
 return [
     'bucket' => '',
+    'disk' => env('FEEDS_DISK', 'local'),
     'enabled-feeds' => [],
     'enabled-store-codes' => [],
     // Format:
@@ -21,6 +14,5 @@ return [
         'receiver-names' => [],
     ],
     'keep-feeds' => '7 days',
-    'upload-feeds' => env('UPLOAD_FEEDS', false),
-    'feeds-queue' => env('FEEDS_QUEUE', 'feeds')
+    'feeds-queue' => env('FEEDS_QUEUE', 'feeds'),
 ];

@@ -2,6 +2,7 @@
 
 namespace Daalder\Feeds\Jobs\Feeds;
 
+use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\Supplier\Supplier;
 use Pionect\Daalder\Services\MoneyFactory;
@@ -34,7 +35,7 @@ class BolFeed extends Feed
         'Wienerberger' => 8.5,
     ];
 
-    protected function getProductQuery()
+    protected function getProductQuery(): Builder
     {
         $query = parent::getProductQuery();
 
