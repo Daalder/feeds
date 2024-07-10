@@ -21,7 +21,7 @@ class GoogleLocalInventoryFeed extends Feed
         'quantity',
         'availability',
         'pickup_method',
-//        'pickup_sla'
+        //        'pickup_sla'
     ];
 
     protected function getProductQuery(): Builder
@@ -33,27 +33,26 @@ class GoogleLocalInventoryFeed extends Feed
             ->whereNull('deleted_at')
             ->whereHas('productproperties', function ($query) {
                 $query
-                    ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table() . '.id')
+                    ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
                     ->where('code', 'include-in-google-feed')
                     ->where('value', '1');
             });
     }
 
     /**
-     * @param Product $product
      * @return array|array[]
      */
     protected function productToFeedRow(Product $product): array
     {
-        $isForSale = ($product->stock->sum('in_stock') <= 0 && !$product->is_procured_on_demand) ? false : $product->is_for_sale;
+        $isForSale = ($product->stock->sum('in_stock') <= 0 && ! $product->is_procured_on_demand) ? false : $product->is_for_sale;
 
         $mainGoogleStoreRow = [
             'store_code' => config('daalder-feeds.main-google-store.store-code'),
             'id' => $product->id,
-            'quantity' => !$isForSale ? 0 : $product->stock->sum('in_stock'),
+            'quantity' => ! $isForSale ? 0 : $product->stock->sum('in_stock'),
             'availability' => $isForSale ? 'in_stock' : 'out_of_stock',
             'pickup_method' => 'buy',
-//            'pickup_sla' => ''
+            //            'pickup_sla' => ''
         ];
 
         $additionalStoresCount = $this->getSecondaryBusinessLocationsCount();
@@ -64,10 +63,10 @@ class GoogleLocalInventoryFeed extends Feed
                 $rows[] = [
                     'store_code' => $pickupPointNumber,
                     'id' => $product->id,
-                    'quantity' => !$isForSale ? 0 : 1,
+                    'quantity' => ! $isForSale ? 0 : 1,
                     'availability' => $isForSale ? 'on_display_to_order' : 'out_of_stock',
                     'pickup_method' => 'ship to store',
-//                        'pickup_sla' => ''
+                    //                        'pickup_sla' => ''
                 ];
             }
 
@@ -78,7 +77,6 @@ class GoogleLocalInventoryFeed extends Feed
     }
 
     /**
-     * @param $query
      * @return int
      */
     public function getProductsCount($query)
@@ -88,9 +86,6 @@ class GoogleLocalInventoryFeed extends Feed
         return $query->count() * $multiplier;
     }
 
-    /**
-     * @return int
-     */
     private function getSecondaryBusinessLocationsCount(): int
     {
         if (config('daalder-feeds.main-google-store.main-pickup-point-id')) {

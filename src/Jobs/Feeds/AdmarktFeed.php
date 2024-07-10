@@ -2,9 +2,8 @@
 
 namespace Daalder\Feeds\Jobs\Feeds;
 
+use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
-use Pionect\Daalder\Models\Store\Store;
-use Pionect\Daalder\Services\MoneyFactory;
 
 class AdmarktFeed extends Feed
 {
@@ -60,17 +59,19 @@ class AdmarktFeed extends Feed
         'image24',
     ];
 
-    protected function getProductQuery() {
+    protected function getProductQuery(): Builder
+    {
         $query = parent::getProductQuery();
 
-        return $query->where(function($query){
+        return $query->where(function ($query) {
             return $query
                 ->where('delivery', '!=', 55)
                 ->orWhereNull('delivery');
         });
     }
 
-    protected function productToFeedRow(Product $product) {
+    protected function productToFeedRow(Product $product)
+    {
         $shipping_weight = ($product->weight != '') ? $product->weight : 1;
 
         $fields = [
@@ -118,7 +119,7 @@ class AdmarktFeed extends Feed
             'image24' => '', // Filled below
         ];
 
-        if (!is_null($product->brand)) {
+        if (! is_null($product->brand)) {
             $fields['brand'] = $product->brand->name;
         }
 
@@ -135,7 +136,7 @@ class AdmarktFeed extends Feed
 
         $adwordsLabel = '';
 
-        if (!is_null($categories)) {
+        if (! is_null($categories)) {
             $path = '';
 
             /* @var $category \Pionect\Daalder\Models\Feed\Category */

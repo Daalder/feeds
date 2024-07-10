@@ -2,7 +2,6 @@
 
 namespace Daalder\Feeds\Jobs\Feeds;
 
-use Pionect\Daalder\Models\Category\Category;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Services\MoneyFactory;
 
@@ -30,7 +29,8 @@ class ShoprFeed extends Feed
         'description',
     ];
 
-    protected function getProductQuery() {
+    protected function getProductQuery(): \Illuminate\Database\Eloquent\Builder
+    {
         $query = parent::getProductQuery();
 
         return $query->has('categories');
@@ -69,7 +69,7 @@ class ShoprFeed extends Feed
             'description' => strip_tags($product->description),
         ];
 
-        if (!is_null($product->brand)) {
+        if (! is_null($product->brand)) {
             $fields['brand'] = $product->brand->name;
         }
 

@@ -4,11 +4,7 @@ namespace Daalder\Feeds\Jobs\Feeds;
 
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
-use Pionect\Daalder\Models\Product\ProductProductProperty;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
-use Pionect\Daalder\Models\Shipping\Rate;
-use Pionect\Daalder\Models\Shipping\ShippingMethod;
-use Pionect\Daalder\Services\MoneyFactory;
 
 class NetrivalsFeed extends Feed
 {
@@ -38,7 +34,8 @@ class NetrivalsFeed extends Feed
         'tags',
     ];
 
-    protected function getProductQuery() {
+    protected function getProductQuery(): Builder
+    {
         $query = parent::getProductQuery();
 
         return $query
@@ -50,7 +47,7 @@ class NetrivalsFeed extends Feed
                     ->join(ProductAttribute::table(), 'productattribute_id', '=', ProductAttribute::table().'.id')
                     ->where('code', 'include-in-netrivals-feed')
                     ->where('value', '1');
-            });;
+            });
     }
 
     protected function productToFeedRow(Product $product)

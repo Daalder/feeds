@@ -4,6 +4,7 @@ namespace App\Jobs\Feeds;
 
 namespace Daalder\Feeds\Jobs\Feeds;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
@@ -48,7 +49,7 @@ class FacebookFeed extends Feed
         'custom_label_4',
     ];
 
-    protected function getProductQuery()
+    protected function getProductQuery(): Builder
     {
         $query = parent::getProductQuery();
 
