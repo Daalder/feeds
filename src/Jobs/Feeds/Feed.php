@@ -2,12 +2,12 @@
 
 namespace Daalder\Feeds\Jobs\Feeds;
 
-use Aws\S3\S3Client;
-use Aws\S3\S3ClientInterface;
 use Daalder\Feeds\Events\AfterCreatingFeedProductQuery;
 use Daalder\Feeds\Events\AfterCreatingFeedRow;
 use Daalder\Feeds\Events\BeforeCreatingRowHeader;
 use Daalder\Feeds\Services\FeedPriceFormatter;
+use Error;
+use Exception;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -18,10 +18,12 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use League\Flysystem\Visibility as FileVisibility;
 use Pionect\Daalder\Events\Feed\FeedJobFailed;
 use Pionect\Daalder\Models\Product\Product;
-use Pionect\Daalder\Models\Product\Visibility;
 use Pionect\Daalder\Models\Product\Repositories\ProductRepository;
+use Pionect\Daalder\Models\Product\Visibility;
 use Pionect\Daalder\Models\Store\Store;
 use Pionect\Daalder\Services\ActiveStore;
 
@@ -35,22 +37,21 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     /** @var Store */
     protected $store;
 
-    /** @var S3Client */
-    protected $s3Client;
-
     /** @var string */
     protected $feedsBucket = '';
+
+    protected string $feedsDisk = '';
 
     /** @var string */
     protected $protocol = 'https://';
 
-    /** @var integer */
-    protected $chunkSize = 50;//500;
+    /** @var int */
+    protected $chunkSize = 50; //500;
 
-    /** @var integer[] */
+    /** @var int[] */
     public $excludedGoogleAttributeSets = [720];
 
-    /** @var integer */
+    /** @var int */
     public $timeout = 7200;
 
     /** @var string[] */
@@ -67,30 +68,23 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
     /**
      * Feed constructor.
-     *
-     * @param  Store  $store
      */
     public function __construct(Store $store)
     {
         $this->store = $store;
         $this->priceFormatter = new FeedPriceFormatter($this->store);
-        $this->feedsBucket = config('daalder-feeds.bucket');
+        $this->feedsDisk = config('daalder-feeds.disk');
 
         $this->onQueue(config('daalder-feeds.feeds-queue'));
     }
 
-    /**
-     * @param  ProductRepository  $productRepository
-     * @param  S3Client|S3ClientInterface  $s3Client
-     */
-    public function handle(ProductRepository $productRepository, S3ClientInterface $s3Client)
+    public function handle(ProductRepository $productRepository): void
     {
         if (optional($this->batch())->cancelled()) {
             return;
         }
 
         $this->productRepository = $productRepository;
-        $this->s3Client = $s3Client;
 
         resolve(ActiveStore::class)->set($this->store);
 
@@ -99,13 +93,11 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
     abstract protected function productToFeedRow(Product $product);
 
-    /**
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    protected function getProductQuery()
+    protected function getProductQuery(): Builder
     {
         return $this->productRepository->newQuery()
             ->where('is_for_sale', 1)
+            ->where('id', '<', 59)
             // that have products
             ->has('images')
             // that are active for $this->store
@@ -122,16 +114,16 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             ->with(['brand', 'productattributeset']);
     }
 
-    private function generate()
+    private function generate(): void
     {
         // Create storage/feeds directory if it doesn't exist
-        if (!File::exists(storage_path('feeds'))) {
+        if (! File::exists(storage_path('feeds'))) {
             File::makeDirectory(storage_path('feeds'));
         }
 
         // Create storage/feeds/{vendor} directory if it doesn't exist
-        if (!File::exists(storage_path("feeds/".$this->vendor))) {
-            File::makeDirectory(storage_path("feeds/".$this->vendor));
+        if (! File::exists(storage_path('feeds/'.$this->vendor))) {
+            File::makeDirectory(storage_path('feeds/'.$this->vendor));
         }
 
         // Prepare filename and path
@@ -163,7 +155,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         event($event);
         $query = $event->getProductsQuery();
 
-        if (!$query) {
+        if (! $query) {
             return;
         }
 
@@ -180,18 +172,19 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                         $feedRow = $this->productToFeedRow($product);
                         $feedRows = Arr::isAssoc($feedRow) ? [$feedRow] : $feedRow;
 
-                        foreach($feedRows as $row) {
+                        foreach ($feedRows as $row) {
                             $feedLines->push($this->postProcessFeedRow($row, $product));
                         }
-                    } catch (\Exception $ex) {
+                    } catch (Exception $ex) {
                         // Log exception and return an empty string
-                        logger()->error($this->vendor.'.'.$this->store->code.": Error when exporting product ".$product->id." for feed. ".$ex->getMessage()." ".$ex->getFile()." ".$ex->getLine()."\n");
+                        logger()->error($this->vendor.'.'.$this->store->code.': Error when exporting product '.$product->id.' for feed. '.$ex->getMessage().' '.$ex->getFile().' '.$ex->getLine()."\n");
 
                         return '';
                     }
+
                     return null;
                 });
-                // Implode the array of rows into a single string
+            // Implode the array of rows into a single string
             $feedLines = $feedLines->implode('');
 
             // Append the feed rows for the product chunk to the feed file
@@ -205,79 +198,47 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
         // If line count in feed is not right, don't proceed to upload to S3
         if ($actualProductCount !== $expectedProductCount) {
-            throw new \Error($this->vendor.'.'.$this->store->code.': Feed should contain '.$expectedProductCount.' products, but instead contains '.$actualProductCount.' products. Cancelling upload.');
+            throw new Error($this->vendor.'.'.$this->store->code.': Feed should contain '.$expectedProductCount.' products, but instead contains '.$actualProductCount.' products. Cancelling upload.');
         }
 
-        if(config('daalder-feeds.upload-feeds'))
-        {
-            // Upload the file to S3
-            $this->uploadToS3($this->filePath);
-            $this->removeLocalFile();
-        }
+        $this->uploadToStorage();
+        $this->removeLocalFile();
     }
 
-    /**
-     * @param  string  $source
-     */
-    protected function uploadToS3()
+    protected function uploadToStorage(): void
     {
-        // Prepare path to file on S3
+        // Prepare path to file
         $targetDirectory = $this->store->code.'/'.$this->vendor;
         $targetFileName = $this->vendor.'.'.$this->type;
         $targetPath = $targetDirectory.'/'.$targetFileName;
 
-        $currentFeed = null;
+        $currentFeedExists = false;
 
         try {
-            // Get the currently active feed file
-            $currentFeed = $this->s3Client->getObject([
-                "Bucket" => $this->feedsBucket,
-                "Key" => $targetPath,
-            ]);
-        } catch (\Exception $e) {
+            $currentFeedExists = Storage::disk($this->feedsDisk)->exists($targetPath);
+        } catch (Exception $e) {
         }
 
         // If the currently active feed file was found
-        if ($currentFeed) {
+        if ($currentFeedExists) {
             // Get the formatted date for when the currently active feed file was last modified and prepare a new filename using it
-            $lastModifiedDate = $currentFeed->get('LastModified');
-            $lastModifiedDate = Carbon::createFromTimestamp($lastModifiedDate->getTimestamp());
+            $lastModifiedDate = Storage::disk($this->feedsDisk)->lastModified($targetPath);
+            $lastModifiedDate = Carbon::createFromTimestamp($lastModifiedDate)->startOfDay();
 
             // If currently active feed was not created today, back it up.
             if ($lastModifiedDate->ne(today())) {
                 $newNameForOldFeed = $this->vendor.'_'.$lastModifiedDate->toDateString().'.'.$this->type;
 
-                try {
-                    // Attempt to get the backup file that's about to be created. This will throw an error if it doesn't
-                    // exist yet. If no error is thrown, the backup file already exists and we don't overwrite it.
-                    $this->s3Client->getObject([
-                        'Bucket' => $this->feedsBucket,
-                        "Key" => $targetDirectory.'/'.$newNameForOldFeed,
-                    ]);
-                } catch (\Exception $e) {
-                    // Copy the currently active feed file to {vendor}_{datestring}.{extension} as a backup
-                    $currentFeed = $this->s3Client->copyObject([
-                        'Bucket' => $this->feedsBucket,
-                        "Key" => $targetDirectory.'/'.$newNameForOldFeed,
-                        "CopySource" => $this->feedsBucket.'/'.$targetPath,
-                        'MetadataDirective' => 'REPLACE'
-                    ]);
+                if (! Storage::disk($this->feedsDisk)->exists($targetDirectory.'/'.$newNameForOldFeed)) {
+                    Storage::disk($this->feedsDisk)->copy($targetPath, $targetDirectory.'/'.$newNameForOldFeed);
                 }
             }
         }
 
-        // Overwrite the currently active feed file with the newly generated one
-        $this->s3Client->putObject(
-            [
-                'Bucket' => $this->feedsBucket,
-                'Key' => $targetPath,
-                'SourceFile' => $this->filePath,
-                'ACL' => 'public-read',
-            ]
-        );
+        Storage::disk($this->feedsDisk)->put($targetPath, File::get($this->filePath), FileVisibility::PUBLIC);
     }
 
-    protected function removeLocalFile()
+    protected function removeLocalFile(): void
     {
         File::delete($this->filePath);
     }
@@ -294,13 +255,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         }
     }
 
-    /** @noinspection PhpUnusedPrivateMethodInspection
-     *
-     * @param  array  $fields
-     *
-     * @return string
-     */
-    protected function convertToTxtLine(array $fields)
+    protected function convertToTxtLine(array $fields): string
     {
         $fields = array_map([$this, 'cleanValue'], $fields);
 
@@ -310,13 +265,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         return $productLine;
     }
 
-    /** @noinspection PhpUnusedPrivateMethodInspection
-     *
-     * @param  array  $fields
-     *
-     * @return string
-     */
-    protected function convertToCsvLine(array $fields)
+    protected function convertToCsvLine(array $fields): string
     {
         // Get cleaned-up fields
         $fields = array_map([$this, 'cleanValue'], $fields);
@@ -338,30 +287,22 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         return $productLine;
     }
 
-    /**
-     * @param $value
-     * @return string
-     */
-    public function cleanValue($value)
+    public function cleanValue($value): string
     {
         return trim(strip_tags(str_replace(["\t", "\n", "\r"], ' ', $value)));
     }
 
     /**
      * The job failed to process.
-     *
-     * @param  \Exception|\Error  $exception
-     *
-     * @return void
      */
-    public function failed($exception): void
+    public function failed(Exception|Error $exception): void
     {
         // TODO: uncomment line below
 //        $this->removeLocalFile();
         event(new FeedJobFailed($exception));
     }
 
-    public function getDelivery($product)
+    public function getDelivery($product): string
     {
         switch ($product->delivery) {
             case '15':
@@ -389,19 +330,12 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         }
     }
 
-    /**
-     * @return string
-     */
-    protected function getHost()
+    protected function getHost(): string
     {
         return $this->protocol.$this->store->domain;
     }
 
-    /**
-     * @param $marge
-     * @return int
-     */
-    protected function margeMapper($marge)
+    protected function margeMapper($marge): int
     {
         switch ($marge) {
             case $marge <= 0:
@@ -412,55 +346,40 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
                 return (int) ceil($marge / 2.5);
         }
     }
-    
-    protected function getGrossMargin($product)
+
+    protected function getGrossMargin($product): float|string
     {
-        if($product->cost_price > 0) {
+        if ($product->cost_price > 0) {
             $currentPriceExcludingVat = optional($product->getCurrentPrice())->price_excluding_vat;
             if ($currentPriceExcludingVat && $currentPriceExcludingVat > 0) {
                 return round((($currentPriceExcludingVat - $product->cost_price) / $currentPriceExcludingVat) * 100,
                     0);
             }
         }
-        return "";
-        
+
+        return '';
     }
 
-    /**
-     * @param  Product  $product
-     * @return int
-     */
-    protected function getInStock(Product $product)
+    protected function getInStock(Product $product): int
     {
         return ($product->stock) ? $product->stock->sum('in_stock') : 0;
     }
 
-    /**
-     * @return string|null
-     */
-    protected function getTag(Product $product)
+    protected function getTag(Product $product): ?string
     {
         $tag = $product->tags()->where('name', 'like', 'G:%')->first();
 
         return ($tag) ? $tag->name : null;
     }
 
-    /**
-     * @param  Product  $product
-     * @return string|null
-     */
-    protected function getImageLink(Product $product)
+    protected function getImageLink(Product $product): ?string
     {
         $image = $product->images()->first();
 
         return optional($image)->src;
     }
 
-    /**
-     * @param  Product  $product
-     * @return string
-     */
-    protected function getCategories(Product $product)
+    protected function getCategories(Product $product): string
     {
         $path = '';
 
@@ -481,7 +400,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         return $path;
     }
 
-    public function uniqueId()
+    public function uniqueId(): string
     {
         return $this->vendor.$this->store->code;
     }
