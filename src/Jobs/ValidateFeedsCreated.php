@@ -38,7 +38,7 @@ class ValidateFeedsCreated
                 $feedType = $feedInstance->type;
 
                 // Prepare path to file on S3
-                $targetDirectory = $store->code.'/'.$feedName;
+                $targetDirectory = 'feeds/'.$store->code.'/'.$feedName;
                 $targetFileName = $feedName.'.'.$feedType;
                 $targetPath = $targetDirectory.'/'.$targetFileName;
 

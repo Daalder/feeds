@@ -203,8 +203,12 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
     protected function uploadToStorage(): void
     {
+        if(Storage::disk($this->feedsDisk)->directoryMissing('feeds')) {
+            Storage::disk($this->feedsDisk)->makeDirectory('feeds');
+        }
+
         // Prepare path to file
-        $targetDirectory = $this->store->code.'/'.$this->vendor;
+        $targetDirectory = 'feeds/'.$this->store->code.'/'.$this->vendor;
         $targetFileName = $this->vendor.'.'.$this->type;
         $targetPath = $targetDirectory.'/'.$targetFileName;
 
