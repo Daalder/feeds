@@ -8,6 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -17,12 +18,6 @@ class PurgeExpiredFeeds implements ShouldQueue
 {
     use Dispatchable, Queueable;
 
-    /** @var S3MultiRegionClient */
-    protected $s3Client;
-
-    /** @var string */
-    protected $feedsBucket = '';
-
     /** @var string */
     protected $keepFor = '';
 
@@ -31,24 +26,20 @@ class PurgeExpiredFeeds implements ShouldQueue
      */
     public function __construct()
     {
-        $this->feedsBucket = config('daalder-feeds.bucket');
         $this->keepFor = config('daalder-feeds.keep-feeds');
     }
 
     public function handle()
     {
-        $this->s3Client = app(S3ClientInterface::class);
         $removeBefore = today()->sub($this->keepFor);
         $filesToRemove = collect();
 
-        // Get iterator for all objects in feedsBucket
-        $iterator = $this->s3Client->getIterator('ListObjects', [
-            'Bucket' => $this->feedsBucket,
-        ]);
+        // Get the filepaths for all the feeds in the Storage disk
+        $feedFilePaths = Storage::disk(config('daalder-feeds.disk'))->allFiles("feeds");
 
-        foreach($iterator as $file) {
+        foreach($feedFilePaths as $filePath) {
             // Get filename including extention
-            $fileName = Str::afterLast($file['Key'], '/');
+            $fileName = Str::afterLast($filePath, '/');
             // Remove extention from filename
             $fileName = Str::beforeLast($fileName, '.');
             // Get the date from the filename
@@ -62,16 +53,13 @@ class PurgeExpiredFeeds implements ShouldQueue
                 // If the feed is from before the cut-off date
                 if($date->diffInDays($removeBefore, false) > 0) {
                     // Mark it for removal
-                    $filesToRemove->push($file['Key']);
+                    $filesToRemove->push($filePath);
                 }
             }
         }
 
         foreach($filesToRemove as $fileToRemove) {
-            $this->s3Client->deleteObject([
-                'Bucket' => $this->feedsBucket,
-                'Key' => $fileToRemove,
-            ]);
+            Storage::disk(config('daalder-feeds.disk'))->delete($fileToRemove);
         }
     }
 }
