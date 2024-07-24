@@ -129,7 +129,7 @@ class GoogleFeed extends Feed
             ->first();
 
         if (! is_null($image)) {
-            $fields['image_link'] = $image->src;
+            $fields['image_link'] = $image->getPublicUrl();
         }
 
         return $fields;

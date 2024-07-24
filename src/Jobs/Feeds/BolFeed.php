@@ -59,8 +59,7 @@ class BolFeed extends Feed
     protected function productToFeedRow(Product $product)
     {
         // fetch images
-        $images = implode(',', $product->images()
-            ->pluck('src')->all());
+        $images = implode(',', $product->images()->map->getPublicUrl()->all());
 
         // set bol price
         $shippingCost = 0;
