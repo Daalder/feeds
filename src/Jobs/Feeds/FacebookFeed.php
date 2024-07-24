@@ -148,7 +148,8 @@ class FacebookFeed extends Feed
         ];
 
         if (!empty($eligibleImages)) {
-            $eligibleImagesSrc = $eligibleImages->pluck('src');
+            $eligibleImagesSrc = $eligibleImages->map->getPublicUrl();
+
             $imageArray['mainImage'] = $eligibleImagesSrc->shift();
 
             if (!empty($eligibleImagesSrc)) {

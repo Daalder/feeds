@@ -66,7 +66,7 @@ class BeslistFeed extends Feed
             ->first();
 
         if ($image) {
-            $fields['image_link'] = $image->src;
+            $fields['image_link'] = $image->getPublicUrl();
         }
 
         //TODO don't hard code id for beslist
