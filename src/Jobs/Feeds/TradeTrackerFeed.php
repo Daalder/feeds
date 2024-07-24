@@ -107,7 +107,7 @@ class TradeTrackerFeed extends Feed
             $fields['brand'] = $product->brand->name;
         }
 
-        $images = $product->images()->limit(5)->map->getPublicUrl()->all();
+        $images = $product->images->take(5)->map->getPublicUrl()->all();
 
         foreach ($images as $key => $image) {
             $fields['imageURL-'.($key + 1)] = $image;
