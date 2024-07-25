@@ -125,7 +125,7 @@ class AdmarktFeed extends Feed
 
         $i = 1;
         while ($i < 24) {
-            $fields['image'.$i] = (isset($product->images[$i - 1])) ? $product->images[$i - 1]->getPublicUrl() : '';
+            $fields['image'.$i] = (isset($product->images[$i - 1])) ? $product->images[$i - 1]->getPublicUrl(true) : '';
             $i++;
         }
 

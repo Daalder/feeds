@@ -62,7 +62,7 @@ class ShoprFeed extends Feed
             'category' => $product->categories->first()->name,
             'delivery_time' => $product->shippingTime->name ?? $this->getDelivery($product),
             'additional_costs' => $shippingCost,
-            'image_1' => $product->images->first()->getPublicUrl(),
+            'image_1' => $product->images->first()->getPublicUrl(true),
             'group_id' => '', //gets filled later
             'gtin' => $product->ean,
             'brand' => '', //gets filled later

@@ -376,7 +376,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     {
         $image = $product->images()->first();
 
-        return optional($image)->getPublicUrl();
+        return optional($image)->getPublicUrl(true);
     }
 
     protected function getCategories(Product $product): string
