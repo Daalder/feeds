@@ -46,7 +46,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
     protected $chunkSize = 50; //500;
 
     /** @var int[] */
-    public $excludedGoogleAttributeSets = [720];
+    public static array $excludedGoogleAttributeSets = [720];
 
     /** @var int */
     public $timeout = 7200;
@@ -81,8 +81,6 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
             return;
         }
 
-        $this->productRepository = $productRepository;
-
         resolve(ActiveStore::class)->set($this->store);
 
         $this->generate();
@@ -90,15 +88,17 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
     abstract protected function productToFeedRow(Product $product);
 
-    protected function getProductQuery(): Builder
+    public static function getProductQuery(Store $store): Builder
     {
-        return $this->productRepository->newQuery()
+        $productRepository = app(ProductRepository::class);
+
+        return $productRepository->newQuery()
             ->where('is_for_sale', 1)
             // that have products
             ->has('images')
             // that are active for $this->store
-            ->whereHas('stores', function (Builder $query) {
-                $query->where(Store::table().'.id', $this->store->id);
+            ->whereHas('stores', function (Builder $query) use ($store) {
+                $query->where(Store::table().'.id', $store->id);
             })
             ->whereHas('visibility', function (Builder $query) {
                 $query->where(Visibility::table().'.code', '!=', Visibility::ONLY_SUBPRODUCT);
@@ -145,7 +145,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
         File::put($this->filePath, $feedHeader);
 
         // Query products
-        $query = $this->getProductQuery();
+        $query = $this->getProductQuery($this->store);
 
         $event = new AfterCreatingFeedProductQuery(get_class($this), $query);
         event($event);
@@ -203,7 +203,7 @@ abstract class Feed implements ShouldQueue, ShouldBeUnique
 
     protected function uploadToStorage(): void
     {
-        if(Storage::disk($this->feedsDisk)->directoryMissing('feeds')) {
+        if (Storage::disk($this->feedsDisk)->directoryMissing('feeds')) {
             Storage::disk($this->feedsDisk)->makeDirectory('feeds');
         }
 

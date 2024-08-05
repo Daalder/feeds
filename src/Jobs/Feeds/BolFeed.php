@@ -4,6 +4,7 @@ namespace Daalder\Feeds\Jobs\Feeds;
 
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
+use Pionect\Daalder\Models\Store\Store;
 use Pionect\Daalder\Models\Supplier\Supplier;
 use Pionect\Daalder\Services\MoneyFactory;
 
@@ -27,21 +28,21 @@ class BolFeed extends Feed
         'Commissie',
     ];
 
-    /**@var array */
-    public $supplierRates = [
+    /** @var array */
+    public static $supplierRates = [
         'KBT' => 9.5,
         'Westwood' => 8.5,
         'Woodvision' => 8.5,
         'Wienerberger' => 8.5,
     ];
 
-    protected function getProductQuery(): Builder
+    public static function getProductQuery(Store $store): Builder
     {
-        $query = parent::getProductQuery();
+        $query = parent::getProductQuery($store);
 
         $supplierQuery = Supplier::select('id', 'name');
-        foreach ($this->supplierRates as $supplier => $rate) {
-            $supplierQuery->orWhere('name', 'LIKE', '%' . $supplier . '%');
+        foreach (self::$supplierRates as $supplier => $rate) {
+            $supplierQuery->orWhere('name', 'LIKE', '%'.$supplier.'%');
         }
         $suppliers = $supplierQuery->get();
 

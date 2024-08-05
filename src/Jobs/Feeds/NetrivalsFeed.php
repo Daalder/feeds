@@ -5,6 +5,7 @@ namespace Daalder\Feeds\Jobs\Feeds;
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
+use Pionect\Daalder\Models\Store\Store;
 
 class NetrivalsFeed extends Feed
 {
@@ -34,9 +35,9 @@ class NetrivalsFeed extends Feed
         'tags',
     ];
 
-    protected function getProductQuery(): Builder
+    public static function getProductQuery(Store $store): Builder
     {
-        $query = parent::getProductQuery();
+        $query = parent::getProductQuery($store);
 
         return $query
             ->with('vatRates', 'stock')

@@ -5,6 +5,7 @@ namespace Daalder\Feeds\Jobs\Feeds;
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
 use Pionect\Daalder\Models\ProductAttribute\ProductAttribute;
+use Pionect\Daalder\Models\Store\Store;
 
 class GoogleLocalInventoryFeed extends Feed
 {
@@ -24,12 +25,12 @@ class GoogleLocalInventoryFeed extends Feed
         //        'pickup_sla'
     ];
 
-    protected function getProductQuery(): Builder
+    public static function getProductQuery(Store $store): Builder
     {
-        $query = parent::getProductQuery();
+        $query = parent::getProductQuery($store);
 
         return $query
-            ->whereNotIn('productattributeset_id', $this->excludedGoogleAttributeSets)
+            ->whereNotIn('productattributeset_id', self::$excludedGoogleAttributeSets)
             ->whereNull('deleted_at')
             ->whereHas('productproperties', function ($query) {
                 $query
