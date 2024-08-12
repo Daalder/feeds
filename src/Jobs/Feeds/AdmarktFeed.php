@@ -4,6 +4,7 @@ namespace Daalder\Feeds\Jobs\Feeds;
 
 use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
+use Pionect\Daalder\Models\Store\Store;
 
 class AdmarktFeed extends Feed
 {
@@ -59,9 +60,9 @@ class AdmarktFeed extends Feed
         'image24',
     ];
 
-    protected function getProductQuery(): Builder
+    public static function getProductQuery(Store $store): Builder
     {
-        $query = parent::getProductQuery();
+        $query = parent::getProductQuery($store);
 
         return $query->where(function ($query) {
             return $query

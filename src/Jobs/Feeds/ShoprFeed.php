@@ -2,7 +2,9 @@
 
 namespace Daalder\Feeds\Jobs\Feeds;
 
+use Illuminate\Database\Eloquent\Builder;
 use Pionect\Daalder\Models\Product\Product;
+use Pionect\Daalder\Models\Store\Store;
 use Pionect\Daalder\Services\MoneyFactory;
 
 class ShoprFeed extends Feed
@@ -29,9 +31,9 @@ class ShoprFeed extends Feed
         'description',
     ];
 
-    protected function getProductQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getProductQuery(Store $store): Builder
     {
-        $query = parent::getProductQuery();
+        $query = parent::getProductQuery($store);
 
         return $query->has('categories');
     }
